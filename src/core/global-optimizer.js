@@ -246,6 +246,7 @@ class GlobalOptimizer {
 
     /**
      * Fill remaining group slots with best synergy matches
+     * Prioritizes filling Tank+Shaman groups with melee DPS first
      */
     fillGroups() {
         const assignedIds = new Set();
@@ -254,16 +255,159 @@ class GlobalOptimizer {
         const remainingPlayers = this.players.filter(p => !assignedIds.has(p.id));
         console.log(`  📊 Remaining players to assign: ${remainingPlayers.length}`);
 
-        // Sort remaining players by priority (tanks > healers > DPS)
-        remainingPlayers.sort((a, b) => {
+        // Categorize remaining players
+        const melee = remainingPlayers.filter(p => 
+            this.synergyCalc.isMelee(p) && !this.synergyCalc.isTank(p)
+        );
+        const hunters = remainingPlayers.filter(p => this.synergyCalc.isHunter(p));
+        const casters = remainingPlayers.filter(p => this.synergyCalc.isCaster(p));
+        const otherPlayers = remainingPlayers.filter(p => 
+            !melee.includes(p) && !hunters.includes(p) && !casters.includes(p)
+        );
+
+        // Phase 1: Fill Tank+Shaman groups with melee DPS (priority)
+        console.log(`  🎯 Phase 1: Filling Tank+Shaman groups with melee DPS`);
+        const tankShamanGroups = this.groups.filter(g => {
+            const hasTank = g.players.some(p => this.synergyCalc.isTank(p));
+            const hasShaman = g.players.some(p => this.synergyCalc.isShaman(p));
+            return hasTank && hasShaman && g.players.length < this.settings.partySize;
+        });
+
+        // Fill Tank+Shaman groups with melee first (ideal: 3 melee or 2 melee + 1 hunter)
+        for (const group of tankShamanGroups) {
+            const slotsNeeded = this.settings.partySize - group.players.length;
+            
+            // Try to fill with melee first
+            let meleeAdded = 0;
+            for (let i = 0; i < Math.min(slotsNeeded, 3) && melee.length > 0; i++) {
+                // Find best melee for this group
+                let bestMelee = null;
+                let bestScore = -Infinity;
+                
+                for (const m of melee) {
+                    if (assignedIds.has(m.id)) continue;
+                    const score = this.calculateIncrementalSynergy(group, m);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMelee = m;
+                    }
+                }
+                
+                if (bestMelee) {
+                    group.addPlayer(bestMelee);
+                    assignedIds.add(bestMelee.id);
+                    meleeAdded++;
+                    console.log(`  ➕ Group ${group.id}: Added ${bestMelee.name} (${bestMelee.class} ${bestMelee.spec}) [Melee] - Synergy: ${bestScore.toFixed(0)}`);
+                }
+            }
+            
+            // If we have room and added 2+ melee, consider adding a hunter for Trueshot Aura
+            if (group.players.length < this.settings.partySize && meleeAdded >= 2 && hunters.length > 0) {
+                let bestHunter = null;
+                let bestScore = -Infinity;
+                
+                for (const h of hunters) {
+                    if (assignedIds.has(h.id)) continue;
+                    const score = this.calculateIncrementalSynergy(group, h);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestHunter = h;
+                    }
+                }
+                
+                if (bestHunter) {
+                    group.addPlayer(bestHunter);
+                    assignedIds.add(bestHunter.id);
+                    console.log(`  ➕ Group ${group.id}: Added ${bestHunter.name} (Hunter) [Trueshot Aura] - Synergy: ${bestScore.toFixed(0)}`);
+                }
+            }
+        }
+
+        // Phase 2: Fill specialized groups (Warlock, Mage) with their class members
+        console.log(`  🎯 Phase 2: Filling specialized caster groups`);
+        const warlockGroups = this.groups.filter(g => {
+            const warlockCount = g.players.filter(p => this.synergyCalc.isWarlock(p)).length;
+            return warlockCount >= 1 && g.players.length < this.settings.partySize;
+        });
+        
+        const mageGroups = this.groups.filter(g => {
+            const mageCount = g.players.filter(p => this.synergyCalc.isMage(p)).length;
+            return mageCount >= 1 && g.players.length < this.settings.partySize;
+        });
+
+        // Fill warlock groups with more warlocks
+        for (const group of warlockGroups) {
+            while (group.players.length < this.settings.partySize) {
+                const availableWarlocks = casters.filter(p => 
+                    this.synergyCalc.isWarlock(p) && !assignedIds.has(p.id)
+                );
+                
+                if (availableWarlocks.length === 0) break;
+                
+                let bestWarlock = null;
+                let bestScore = -Infinity;
+                
+                for (const w of availableWarlocks) {
+                    const score = this.calculateIncrementalSynergy(group, w);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestWarlock = w;
+                    }
+                }
+                
+                if (bestWarlock) {
+                    group.addPlayer(bestWarlock);
+                    assignedIds.add(bestWarlock.id);
+                    console.log(`  ➕ Group ${group.id}: Added ${bestWarlock.name} (Warlock) - Synergy: ${bestScore.toFixed(0)}`);
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // Fill mage groups with more mages
+        for (const group of mageGroups) {
+            while (group.players.length < this.settings.partySize) {
+                const availableMages = casters.filter(p => 
+                    this.synergyCalc.isMage(p) && !assignedIds.has(p.id)
+                );
+                
+                if (availableMages.length === 0) break;
+                
+                let bestMage = null;
+                let bestScore = -Infinity;
+                
+                for (const m of availableMages) {
+                    const score = this.calculateIncrementalSynergy(group, m);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMage = m;
+                    }
+                }
+                
+                if (bestMage) {
+                    group.addPlayer(bestMage);
+                    assignedIds.add(bestMage.id);
+                    console.log(`  ➕ Group ${group.id}: Added ${bestMage.name} (Mage) - Synergy: ${bestScore.toFixed(0)}`);
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // Phase 3: Fill remaining slots with best synergy matches
+        console.log(`  🎯 Phase 3: Filling remaining slots with best synergy`);
+        const allRemaining = this.players.filter(p => !assignedIds.has(p.id));
+        
+        // Sort by priority
+        allRemaining.sort((a, b) => {
             const priorityA = this.getPlayerPriority(a);
             const priorityB = this.getPlayerPriority(b);
             if (priorityA !== priorityB) return priorityA - priorityB;
-            return b.gearScore - a.gearScore; // Higher GS first
+            return b.gearScore - a.gearScore;
         });
 
-        // Greedy assignment: place each player in group with best synergy gain
-        for (const player of remainingPlayers) {
+        for (const player of allRemaining) {
             let bestGroup = null;
             let bestScore = -Infinity;
 
@@ -279,7 +423,8 @@ class GlobalOptimizer {
 
             if (bestGroup) {
                 bestGroup.addPlayer(player);
-                console.log(`  ➕ Group ${bestGroup.id}: Added ${player.name} (${player.class} ${player.spec}) - Synergy gain: ${bestScore.toFixed(0)}`);
+                assignedIds.add(player.id);
+                console.log(`  ➕ Group ${bestGroup.id}: Added ${player.name} (${player.class} ${player.spec}) - Synergy: ${bestScore.toFixed(0)}`);
             } else {
                 console.log(`  ⚠️ Could not place ${player.name} - all groups full`);
             }
@@ -314,6 +459,50 @@ class GlobalOptimizer {
         }
         if (this.synergyCalc.isTank(player) && counts.tanks >= 2) {
             synergy -= 40;
+        }
+
+        // Special bonuses for optimal compositions
+        const hasTank = counts.tanks > 0;
+        const hasShaman = counts.shamans > 0;
+        
+        // Tank+Shaman group: prioritize melee DPS
+        if (hasTank && hasShaman) {
+            const isMelee = this.synergyCalc.isMelee(player) && !this.synergyCalc.isTank(player);
+            const isHunter = this.synergyCalc.isHunter(player);
+            
+            if (isMelee) {
+                // Strong bonus for adding melee to Tank+Shaman groups
+                synergy += 50;
+                
+                // Extra bonus if we already have 2+ melee (building a strong melee core)
+                if (counts.melee >= 2) {
+                    synergy += 25;
+                }
+            } else if (isHunter && counts.melee >= 2) {
+                // Bonus for adding hunter to melee-heavy groups (Trueshot Aura)
+                synergy += 30;
+            } else if (!isMelee && !isHunter && player.roles.primary !== 'healer') {
+                // Penalty for adding non-melee DPS to Tank+Shaman groups
+                synergy -= 40;
+            }
+        }
+        
+        // Warlock group: prioritize more warlocks
+        if (counts.warlocks >= 2) {
+            if (this.synergyCalc.isWarlock(player)) {
+                synergy += 40; // Strong bonus for adding more warlocks
+            } else if (!this.synergyCalc.isShadowPriest(player) && player.roles.primary !== 'healer') {
+                synergy -= 20; // Penalty for diluting warlock group
+            }
+        }
+        
+        // Mage group: prioritize more mages
+        if (counts.mages >= 2) {
+            if (this.synergyCalc.isMage(player)) {
+                synergy += 40; // Strong bonus for adding more mages
+            } else if (!this.synergyCalc.isBalanceDruid(player) && player.roles.primary !== 'healer') {
+                synergy -= 20; // Penalty for diluting mage group
+            }
         }
 
         return synergy;
