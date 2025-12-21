@@ -56,7 +56,7 @@ class Player {
         };
 
         const classRoles = {
-            'Warrior': { primary: 'tank', secondary: 'dps', all: ['tank', 'dps'] },
+            'Warrior': { primary: 'dps', secondary: 'tank', all: ['tank', 'dps'] },
             'Rogue': { primary: 'dps', secondary: null, all: ['dps'] },
             'Hunter': { primary: 'dps', secondary: null, all: ['dps', 'utility'] },
             'Mage': { primary: 'dps', secondary: null, all: ['dps'] },
@@ -74,16 +74,35 @@ class Player {
             roles.all = roleData.all;
         }
 
-        // Adjust based on spec if available
+        // Adjust based on spec if available - spec takes priority
         if (this.spec) {
             const specLower = this.spec.toLowerCase();
-            if (specLower.includes('tank') || specLower.includes('protection') || specLower.includes('feral')) {
+            
+            // Tank specs
+            if (specLower.includes('protection') || specLower.includes('guardian')) {
                 roles.primary = 'tank';
-            } else if (specLower.includes('heal') || specLower.includes('resto') || specLower.includes('holy') || specLower.includes('disc')) {
+            }
+            // Healer specs
+            else if (specLower.includes('heal') || specLower.includes('resto') || 
+                     specLower.includes('holy') || specLower.includes('disc')) {
                 roles.primary = 'healer';
-            } else if (specLower.includes('dps') || specLower.includes('damage')) {
+            }
+            // DPS specs - be explicit about warrior DPS specs
+            else if (specLower.includes('fury') || specLower.includes('arms') ||
+                     specLower.includes('combat') || specLower.includes('assassination') ||
+                     specLower.includes('subtlety') || specLower.includes('enhancement') ||
+                     specLower.includes('elemental') || specLower.includes('shadow') ||
+                     specLower.includes('balance') || specLower.includes('feral') ||
+                     specLower.includes('retribution') || specLower.includes('dps') ||
+                     specLower.includes('damage')) {
                 roles.primary = 'dps';
             }
+        }
+
+        // Special case for Tank class (from Raid Helper)
+        if (this.class === 'Tank') {
+            roles.primary = 'tank';
+            roles.all = ['tank'];
         }
 
         return roles;

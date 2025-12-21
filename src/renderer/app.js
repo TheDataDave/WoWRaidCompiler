@@ -117,7 +117,7 @@ function parseRaidData(data) {
         displayPlayerSummary(summary);
         
         // Show warnings if any
-        if (result.warnings &amp;&amp; result.warnings.length > 0) {
+        if (result.warnings && result.warnings.length > 0) {
             console.warn('Parsing warnings:', result.warnings);
             const warningMsg = result.warnings.join('\n');
             showStatus('info', `Loaded ${result.players.length} valid players. ${result.warnings.length} warnings - check console for details.`);

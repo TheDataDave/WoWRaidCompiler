@@ -1,4 +1,5 @@
 const { Player, Raid, Group } = require('./models');
+const SynergyCalculator = require('./synergy');
 
 class RaidOptimizer {
     constructor(settings) {
@@ -10,6 +11,7 @@ class RaidOptimizer {
             classWeights: settings.classWeights || this.getDefaultClassWeights(),
             partySize: 5
         };
+        this.synergyCalc = new SynergyCalculator();
     }
 
     getDefaultClassWeights() {
@@ -182,41 +184,401 @@ class RaidOptimizer {
             groups.push(new Group(i + 1, this.settings.partySize));
         }
 
-        // Distribute players to maximize synergy
-        const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+        // Categorize players by type for synergy-based grouping
+        const playersByType = this.categorizePlayersByType(players);
+        
+        // Create specialized groups based on synergy
+        let groupIndex = 0;
+        
+        // 1. Create melee groups (Warriors, Rogues, Feral Druids + Shamans)
+        const meleeGroups = this.createMeleeGroups(playersByType, groups, groupIndex);
+        groupIndex += meleeGroups.length;
+        
+        // 2. Create caster groups (Mages + Balance Druids + Healers)
+        const casterGroups = this.createCasterGroups(playersByType, groups, groupIndex);
+        groupIndex += casterGroups.length;
+        
+        // 3. Create warlock groups (Warlocks + Shadow Priests + Healers)
+        const warlockGroups = this.createWarlockGroups(playersByType, groups, groupIndex);
+        groupIndex += warlockGroups.length;
+        
+        // 4. Distribute remaining players to fill groups
+        this.distributeRemainingPlayers(playersByType, groups);
+        
+        // 5. Balance healers across groups
+        this.balanceHealersAcrossGroups(groups, playersByType);
 
-        // First, distribute key roles (tanks and healers) evenly
-        const tanks = sortedPlayers.filter(p => p.roles.primary === 'tank');
-        const healers = sortedPlayers.filter(p => p.roles.primary === 'healer');
-        const dps = sortedPlayers.filter(p => 
-            p.roles.primary === 'dps' && !tanks.includes(p) && !healers.includes(p)
-        );
-
-        // Distribute tanks
-        tanks.forEach((tank, index) => {
-            const groupIndex = index % numGroups;
-            groups[groupIndex].addPlayer(tank);
+        // Calculate synergy scores for all groups
+        groups.forEach(group => {
+            group.score = this.synergyCalc.calculateGroupSynergy(group.players);
         });
 
-        // Distribute healers
-        healers.forEach((healer, index) => {
-            const groupIndex = index % numGroups;
-            groups[groupIndex].addPlayer(healer);
+        // Filter out empty groups
+        return groups.filter(g => g.players.length > 0);
+    }
+
+    categorizePlayersByType(players) {
+        return {
+            tanks: players.filter(p => p.roles.primary === 'tank'),
+            healers: players.filter(p => p.roles.primary === 'healer'),
+            meleeWarriors: players.filter(p => p.class === 'Warrior' && p.roles.primary === 'dps'),
+            rogues: players.filter(p => p.class === 'Rogue'),
+            feralDruids: players.filter(p => p.class === 'Druid' && p.spec.includes('Feral')),
+            enhancementShamans: players.filter(p => p.class === 'Shaman' && p.spec.includes('Enhancement')),
+            restoShamans: players.filter(p => p.class === 'Shaman' && p.spec.includes('Restoration')),
+            mages: players.filter(p => p.class === 'Mage'),
+            warlocks: players.filter(p => p.class === 'Warlock'),
+            shadowPriests: players.filter(p => p.class === 'Priest' && p.spec.includes('Shadow')),
+            balanceDruids: players.filter(p => p.class === 'Druid' && p.spec.includes('Balance')),
+            hunters: players.filter(p => p.class === 'Hunter'),
+            otherHealers: players.filter(p => 
+                p.roles.primary === 'healer' && 
+                !(p.class === 'Shaman' && p.spec.includes('Restoration'))
+            ),
+            assigned: new Set()
+        };
+    }
+
+    createMeleeGroups(playersByType, groups, startIndex) {
+        const meleeGroups = [];
+        const { meleeWarriors, rogues, feralDruids, enhancementShamans, restoShamans, tanks, assigned } = playersByType;
+        
+        // Combine all melee DPS
+        const allMelee = [...meleeWarriors, ...rogues, ...feralDruids, ...enhancementShamans];
+        
+        let groupIndex = startIndex;
+        let currentGroup = [];
+        
+        for (const melee of allMelee) {
+            if (assigned.has(melee.id)) continue;
+            
+            currentGroup.push(melee);
+            assigned.add(melee.id);
+            
+            // When we have 3-4 melee, complete the group
+            if (currentGroup.length >= 3) {
+                // Add a restoration shaman if available (priority for melee groups)
+                const shaman = restoShamans.find(s => !assigned.has(s.id));
+                if (shaman) {
+                    currentGroup.push(shaman);
+                    assigned.add(shaman.id);
+                }
+                
+                // Fill remaining slots with more melee or tanks
+                while (currentGroup.length < 5) {
+                    // Try to add another melee first
+                    const nextMelee = allMelee.find(m => !assigned.has(m.id));
+                    if (nextMelee) {
+                        currentGroup.push(nextMelee);
+                        assigned.add(nextMelee.id);
+                        continue;
+                    }
+                    
+                    // Then try a tank
+                    const tank = tanks.find(t => !assigned.has(t.id));
+                    if (tank) {
+                        currentGroup.push(tank);
+                        assigned.add(tank.id);
+                        continue;
+                    }
+                    
+                    break;
+                }
+                
+                // Add group and start new one
+                if (groupIndex < groups.length) {
+                    currentGroup.forEach(p => groups[groupIndex].addPlayer(p));
+                    meleeGroups.push(groups[groupIndex]);
+                    groupIndex++;
+                }
+                currentGroup = [];
+            }
+        }
+        
+        // Handle remaining melee in current group
+        if (currentGroup.length > 0 && groupIndex < groups.length) {
+            // Try to add a shaman healer
+            const shaman = restoShamans.find(s => !assigned.has(s.id));
+            if (shaman) {
+                currentGroup.push(shaman);
+                assigned.add(shaman.id);
+            }
+            
+            currentGroup.forEach(p => groups[groupIndex].addPlayer(p));
+            meleeGroups.push(groups[groupIndex]);
+        }
+        
+        return meleeGroups;
+    }
+
+    createCasterGroups(playersByType, groups, startIndex) {
+        const casterGroups = [];
+        const { mages, balanceDruids, otherHealers, assigned } = playersByType;
+        
+        let groupIndex = startIndex;
+        let currentGroup = [];
+        
+        // Add mages to groups (max 4 per group to leave room for healer)
+        for (const mage of mages) {
+            if (assigned.has(mage.id)) continue;
+            
+            currentGroup.push(mage);
+            assigned.add(mage.id);
+            
+            // When we have 3-4 mages, complete the group
+            if (currentGroup.length >= 3) {
+                // Try to add a balance druid for spell crit aura
+                const boomkin = balanceDruids.find(b => !assigned.has(b.id));
+                if (boomkin && currentGroup.length < 4) {
+                    currentGroup.push(boomkin);
+                    assigned.add(boomkin.id);
+                }
+                
+                // Add one more mage if we don't have 4 yet
+                if (currentGroup.length < 4) {
+                    const nextMage = mages.find(m => !assigned.has(m.id));
+                    if (nextMage) {
+                        currentGroup.push(nextMage);
+                        assigned.add(nextMage.id);
+                    }
+                }
+                
+                // Always try to add a healer to caster groups
+                const healer = otherHealers.find(h => !assigned.has(h.id));
+                if (healer && currentGroup.length < 5) {
+                    currentGroup.push(healer);
+                    assigned.add(healer.id);
+                }
+                
+                // Add group and start new one
+                if (groupIndex < groups.length) {
+                    currentGroup.forEach(p => groups[groupIndex].addPlayer(p));
+                    casterGroups.push(groups[groupIndex]);
+                    groupIndex++;
+                }
+                currentGroup = [];
+            }
+        }
+        
+        // Handle remaining mages
+        if (currentGroup.length > 0 && groupIndex < groups.length) {
+            // Try to add a balance druid
+            const boomkin = balanceDruids.find(b => !assigned.has(b.id));
+            if (boomkin) {
+                currentGroup.push(boomkin);
+                assigned.add(boomkin.id);
+            }
+            
+            // Add a healer
+            const healer = otherHealers.find(h => !assigned.has(h.id));
+            if (healer) {
+                currentGroup.push(healer);
+                assigned.add(healer.id);
+            }
+            
+            currentGroup.forEach(p => groups[groupIndex].addPlayer(p));
+            casterGroups.push(groups[groupIndex]);
+        }
+        
+        return casterGroups;
+    }
+
+    createWarlockGroups(playersByType, groups, startIndex) {
+        const warlockGroups = [];
+        const { warlocks, shadowPriests, otherHealers, assigned } = playersByType;
+        
+        let groupIndex = startIndex;
+        let currentGroup = [];
+        
+        // Add warlocks to groups (max 3-4 per group to leave room for shadow priest/healer)
+        for (const warlock of warlocks) {
+            if (assigned.has(warlock.id)) continue;
+            
+            currentGroup.push(warlock);
+            assigned.add(warlock.id);
+            
+            // When we have 3 warlocks, complete the group
+            if (currentGroup.length >= 3) {
+                // Add a shadow priest for shadow weaving (priority)
+                const spriest = shadowPriests.find(sp => !assigned.has(sp.id));
+                if (spriest && currentGroup.length < 5) {
+                    currentGroup.push(spriest);
+                    assigned.add(spriest.id);
+                }
+                
+                // Add one more warlock if we have space and no shadow priest
+                if (currentGroup.length < 4 && !spriest) {
+                    const nextLock = warlocks.find(w => !assigned.has(w.id));
+                    if (nextLock) {
+                        currentGroup.push(nextLock);
+                        assigned.add(nextLock.id);
+                    }
+                }
+                
+                // Always try to add a healer to warlock groups
+                if (currentGroup.length < 5) {
+                    const healer = otherHealers.find(h => !assigned.has(h.id));
+                    if (healer) {
+                        currentGroup.push(healer);
+                        assigned.add(healer.id);
+                    }
+                }
+                
+                // Add group and start new one
+                if (groupIndex < groups.length) {
+                    currentGroup.forEach(p => groups[groupIndex].addPlayer(p));
+                    warlockGroups.push(groups[groupIndex]);
+                    groupIndex++;
+                }
+                currentGroup = [];
+            }
+        }
+        
+        // Handle remaining warlocks
+        if (currentGroup.length > 0 && groupIndex < groups.length) {
+            const spriest = shadowPriests.find(sp => !assigned.has(sp.id));
+            if (spriest) {
+                currentGroup.push(spriest);
+                assigned.add(spriest.id);
+            }
+            
+            // Add a healer
+            const healer = otherHealers.find(h => !assigned.has(h.id));
+            if (healer) {
+                currentGroup.push(healer);
+                assigned.add(healer.id);
+            }
+            
+            currentGroup.forEach(p => groups[groupIndex].addPlayer(p));
+            warlockGroups.push(groups[groupIndex]);
+        }
+        
+        return warlockGroups;
+    }
+
+    createHealerGroups(playersByType, groups, startIndex) {
+        const healerGroups = [];
+        const { otherHealers, assigned } = playersByType;
+        
+        let groupIndex = startIndex;
+        
+        // Group healers together if there are many
+        if (otherHealers.length >= 4) {
+            let currentGroup = [];
+            
+            for (const healer of otherHealers) {
+                if (assigned.has(healer.id)) continue;
+                
+                currentGroup.push(healer);
+                assigned.add(healer.id);
+                
+                if (currentGroup.length >= 5 && groupIndex < groups.length) {
+                    currentGroup.forEach(p => groups[groupIndex].addPlayer(p));
+                    healerGroups.push(groups[groupIndex]);
+                    groupIndex++;
+                    currentGroup = [];
+                }
+            }
+            
+            // Handle remaining healers
+            if (currentGroup.length > 0 && groupIndex < groups.length) {
+                currentGroup.forEach(p => groups[groupIndex].addPlayer(p));
+                healerGroups.push(groups[groupIndex]);
+            }
+        }
+        
+        return healerGroups;
+    }
+
+    distributeRemainingPlayers(playersByType, groups) {
+        const { assigned } = playersByType;
+        
+        // Collect all unassigned players
+        const allPlayers = [
+            ...playersByType.tanks,
+            ...playersByType.healers,
+            ...playersByType.meleeWarriors,
+            ...playersByType.rogues,
+            ...playersByType.feralDruids,
+            ...playersByType.enhancementShamans,
+            ...playersByType.restoShamans,
+            ...playersByType.mages,
+            ...playersByType.warlocks,
+            ...playersByType.shadowPriests,
+            ...playersByType.balanceDruids,
+            ...playersByType.hunters,
+            ...playersByType.otherHealers
+        ];
+        
+        const unassigned = allPlayers.filter(p => !assigned.has(p.id));
+        
+        // Distribute unassigned players to groups with space
+        for (const player of unassigned) {
+            // Find group with best synergy and space
+            let bestGroup = null;
+            let bestScore = -1;
+            
+            for (const group of groups) {
+                if (group.players.length >= 5) continue;
+                
+                // Calculate synergy if we add this player
+                const testPlayers = [...group.players, player];
+                const score = this.synergyCalc.calculateGroupSynergy(testPlayers);
+                
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestGroup = group;
+                }
+            }
+            
+            if (bestGroup) {
+                bestGroup.addPlayer(player);
+                assigned.add(player.id);
+            }
+        }
+    }
+
+    balanceHealersAcrossGroups(groups, playersByType) {
+        // Find groups without healers that have DPS
+        const groupsWithoutHealers = groups.filter(g => {
+            const hasHealer = g.players.some(p => p.roles.primary === 'healer');
+            return g.players.length > 0 && !hasHealer && g.players.length < 5;
         });
-
-        // Distribute DPS to balance groups
-        dps.forEach(player => {
-            // Find group with lowest player count
-            const targetGroup = groups.reduce((min, group) => 
-                group.players.length < min.players.length ? group : min
-            );
-            targetGroup.addPlayer(player);
+        
+        // Find groups with multiple healers (2+)
+        const groupsWithMultipleHealers = groups.filter(g => {
+            const healerCount = g.players.filter(p => p.roles.primary === 'healer').length;
+            return healerCount >= 2;
+        }).sort((a, b) => {
+            const aHealers = a.players.filter(p => p.roles.primary === 'healer').length;
+            const bHealers = b.players.filter(p => p.roles.primary === 'healer').length;
+            return bHealers - aHealers; // Sort by most healers first
         });
-
-        // Calculate scores for all groups
-        groups.forEach(group => group.calculateScore());
-
-        return groups;
+        
+        // Move healers from groups with multiple to groups without
+        for (const targetGroup of groupsWithoutHealers) {
+            if (targetGroup.players.length >= 5) continue;
+            
+            let healerMoved = false;
+            for (const sourceGroup of groupsWithMultipleHealers) {
+                const healers = sourceGroup.players.filter(p => p.roles.primary === 'healer');
+                if (healers.length <= 1) continue;
+                
+                // Move one healer (prefer non-shaman healers from melee groups)
+                let healerToMove = healers.find(h => h.class !== 'Shaman');
+                if (!healerToMove) {
+                    healerToMove = healers[healers.length - 1];
+                }
+                
+                sourceGroup.removePlayer(healerToMove.id);
+                targetGroup.addPlayer(healerToMove);
+                healerMoved = true;
+                
+                break; // Move to next target group
+            }
+            
+            if (!healerMoved) break; // No more healers to move
+        }
     }
 
     optimize(players) {
