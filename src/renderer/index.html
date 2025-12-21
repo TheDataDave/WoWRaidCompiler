@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WoW Classic Raid Composition Optimizer</title>
+    <link rel="stylesheet" href="styles.css">
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚔️ WoW Classic Raid Composition Optimizer</h1>
+            <p class="subtitle">Optimize your raid composition with Battle.net API integration</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="upload">📁 Upload</button>
+            <button class="tab-btn" data-tab="settings">⚙️ Settings</button>
+            <button class="tab-btn" data-tab="composition">🎯 Composition</button>
+            <button class="tab-btn" data-tab="export">💾 Export</button>
+        </nav>
+
+        <main>
+            <!-- Upload Tab -->
+            <div id="upload-tab" class="tab-content active">
+                <div class="upload-section">
+                    <h2>Import Raid Helper JSON</h2>
+                    <div class="upload-area" id="upload-area">
+                        <div class="upload-icon">📤</div>
+                        <p>Click to select Raid Helper JSON file</p>
+                        <button class="btn btn-primary" id="select-file-btn">Select File</button>
+                    </div>
+                    <div id="file-info" class="file-info hidden">
+                        <h3>File Loaded</h3>
+                        <p id="file-path"></p>
+                        <div id="player-summary"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings-tab" class="tab-content">
+                <div class="settings-section">
+                    <h2>Configuration</h2>
+                    
+                    <div class="setting-group">
+                        <h3>Battle.net API Credentials</h3>
+                        <div class="form-group">
+                            <label for="client-id">Client ID:</label>
+                            <input type="text" id="client-id" placeholder="Enter your Battle.net Client ID">
+                        </div>
+                        <div class="form-group">
+                            <label for="client-secret">Client Secret:</label>
+                            <input type="password" id="client-secret" placeholder="Enter your Battle.net Client Secret">
+                        </div>
+                        <div class="form-group">
+                            <label for="region">Region:</label>
+                            <select id="region">
+                                <option value="us">US</option>
+                                <option value="eu">EU</option>
+                                <option value="kr">KR</option>
+                                <option value="tw">TW</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Raid Configuration</h3>
+                        <div class="form-group">
+                            <label for="raid-size">Raid Size:</label>
+                            <select id="raid-size">
+                                <option value="5">5-Man Dungeon</option>
+                                <option value="10">10-Man Raid</option>
+                                <option value="20" selected>20-Man Raid</option>
+                                <option value="25">25-Man Raid</option>
+                                <option value="40">40-Man Raid</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="faction">Faction:</label>
+                            <select id="faction">
+                                <option value="neutral">Neutral (All Classes)</option>
+                                <option value="alliance">Alliance (No Shamans)</option>
+                                <option value="horde">Horde (No Paladins)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Role Thresholds</h3>
+                        <div class="form-group">
+                            <label for="healer-pct">Healer Percentage:</label>
+                            <input type="number" id="healer-pct" min="10" max="50" value="25" step="5">
+                            <span class="help-text">% of raid size</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="tank-count">Minimum Tanks:</label>
+                            <input type="number" id="tank-count" min="1" max="5" value="2">
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Class Priority Weights</h3>
+                        <div class="weight-grid">
+                            <div class="weight-item">
+                                <label>Warrior:</label>
+                                <input type="number" id="weight-warrior" min="0" max="10" value="5" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Rogue:</label>
+                                <input type="number" id="weight-rogue" min="0" max="10" value="4" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Hunter:</label>
+                                <input type="number" id="weight-hunter" min="0" max="10" value="5" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Mage:</label>
+                                <input type="number" id="weight-mage" min="0" max="10" value="5" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Warlock:</label>
+                                <input type="number" id="weight-warlock" min="0" max="10" value="5" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Priest:</label>
+                                <input type="number" id="weight-priest" min="0" max="10" value="6" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Druid:</label>
+                                <input type="number" id="weight-druid" min="0" max="10" value="5" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Shaman:</label>
+                                <input type="number" id="weight-shaman" min="0" max="10" value="7" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Paladin:</label>
+                                <input type="number" id="weight-paladin" min="0" max="10" value="6" step="0.5">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" id="save-settings-btn">💾 Save Settings</button>
+                </div>
+            </div>
+
+            <!-- Composition Tab -->
+            <div id="composition-tab" class="tab-content">
+                <div class="composition-section">
+                    <div class="composition-header">
+                        <h2>Raid Composition</h2>
+                        <div class="composition-actions">
+                            <button class="btn btn-primary" id="optimize-btn" disabled>🎯 Optimize Composition</button>
+                            <button class="btn btn-secondary" id="fetch-gs-btn" disabled>📊 Fetch Gear Scores</button>
+                        </div>
+                    </div>
+
+                    <div id="optimization-status" class="status-message hidden"></div>
+
+                    <div id="composition-results" class="composition-results hidden">
+                        <div class="results-header">
+                            <h3>Optimized Groups</h3>
+                            <div class="view-toggle">
+                                <button class="view-btn active" data-view="vertical">Vertical</button>
+                                <button class="view-btn" data-view="horizontal">Horizontal</button>
+                            </div>
+                        </div>
+                        <div id="groups-container" class="groups-container"></div>
+                        
+                        <div class="composition-stats">
+                            <h3>Composition Statistics</h3>
+                            <div id="stats-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Tab -->
+            <div id="export-tab" class="tab-content">
+                <div class="export-section">
+                    <h2>Export Results</h2>
+                    <div class="export-options">
+                        <div class="export-option">
+                            <h3>📄 JSON Export</h3>
+                            <p>Export optimized composition as JSON file</p>
+                            <button class="btn btn-primary" id="export-json-btn" disabled>Export JSON</button>
+                        </div>
+                        <div class="export-option">
+                            <h3>📊 CSV Export</h3>
+                            <p>Export composition as CSV spreadsheet</p>
+                            <button class="btn btn-primary" id="export-csv-btn" disabled>Export CSV</button>
+                        </div>
+                        <div class="export-option">
+                            <h3>📋 Copy to Clipboard</h3>
+                            <p>Copy formatted composition text</p>
+                            <button class="btn btn-secondary" id="copy-clipboard-btn" disabled>Copy Text</button>
+                        </div>
+                    </div>
+
+                    <div class="export-preview">
+                        <h3>Preview</h3>
+                        <pre id="export-preview-text"></pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>WoW Classic Raid Composition Optimizer v1.0.0 | Created by NinjaTech AI</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
