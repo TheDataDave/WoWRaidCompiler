@@ -23,7 +23,17 @@ class Player {
 
     normalizeClass(className) {
         if (!className) return 'Unknown';
+        
+        // Handle special status classes
+        const statusClasses = ['tentative', 'late', 'bench', 'absence', 'tank'];
         const normalized = className.toLowerCase().trim();
+        
+        if (statusClasses.includes(normalized)) {
+            // These are status indicators, not actual classes
+            // Return as-is for now, caller should handle
+            return className;
+        }
+        
         const classMap = {
             'warrior': 'Warrior',
             'rogue': 'Rogue',

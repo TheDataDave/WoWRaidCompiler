@@ -13,24 +13,32 @@ class RaidHelperParser {
             return { valid: false, errors };
         }
 
+        // Check for error response from Raid Helper
+        if (data.reason) {
+            errors.push(`Raid Helper error: ${data.reason}`);
+            return { valid: false, errors };
+        }
+
         // Check if raidDrop exists
         if (!data.raidDrop || !Array.isArray(data.raidDrop)) {
             errors.push('Missing or invalid raidDrop array');
             return { valid: false, errors };
         }
 
-        // Validate each player entry
-        data.raidDrop.forEach((entry, index) => {
-            this.requiredFields.forEach(field => {
-                if (!entry[field]) {
-                    errors.push(`Player ${index + 1}: Missing required field '${field}'`);
-                }
-            });
-        });
+        // Check if there are any valid players (not all null)
+        const validPlayers = data.raidDrop.filter(entry => 
+            entry.name && entry.class && entry.spec
+        );
+
+        if (validPlayers.length === 0) {
+            errors.push('No valid players found in raid data. All slots appear to be empty.');
+            return { valid: false, errors };
+        }
 
         return {
-            valid: errors.length === 0,
-            errors
+            valid: true,
+            errors: [],
+            warnings: [`Found ${validPlayers.length} valid players out of ${data.raidDrop.length} total slots`]
         };
     }
 
@@ -46,17 +54,41 @@ class RaidHelperParser {
         }
 
         const players = [];
-        const warnings = [];
+        const warnings = validation.warnings || [];
+        const skippedSlots = [];
+        
+        // Special class values that indicate status, not actual classes
+        const statusClasses = ['Tentative', 'Late', 'Bench', 'Absence'];
 
         data.raidDrop.forEach((entry, index) => {
+            // Skip empty slots (all null values)
+            if (!entry.name || !entry.class || !entry.spec) {
+                skippedSlots.push(index + 1);
+                return;
+            }
+
             try {
+                // Handle special status classes
+                let actualClass = entry.class;
+                let isTentative = false;
+                let isBenched = false;
+                
+                if (statusClasses.includes(entry.class)) {
+                    // Try to infer class from spec or other fields
+                    // For now, skip these entries as we can't determine their actual class
+                    warnings.push(`Slot ${index + 1} (${entry.name}): Status class '${entry.class}' - skipping (cannot determine actual WoW class)`);
+                    return;
+                }
+
                 const player = new Player({
                     userid: entry.userid,
                     name: entry.name,
-                    class: entry.class,
+                    class: actualClass,
                     spec: entry.spec || entry.spec1,
                     signuptime: entry.signuptime,
-                    isConfirmed: entry.isConfirmed !== false,
+                    isConfirmed: entry.isConfirmed !== false && entry.isConfirmed !== "false",
+                    isTentative: isTentative,
+                    isBenched: isBenched,
                     note: entry.note,
                     partyId: entry.partyId,
                     slotId: entry.slotId
@@ -64,16 +96,22 @@ class RaidHelperParser {
 
                 players.push(player);
             } catch (error) {
-                warnings.push(`Player ${index + 1} (${entry.name}): ${error.message}`);
+                warnings.push(`Slot ${index + 1} (${entry.name || 'Unknown'}): ${error.message}`);
             }
         });
+
+        if (skippedSlots.length > 0) {
+            warnings.push(`Skipped ${skippedSlots.length} empty slots`);
+        }
 
         return {
             success: true,
             players,
             warnings,
             metadata: {
-                totalSignups: data.raidDrop.length,
+                totalSlots: data.raidDrop.length,
+                validPlayers: players.length,
+                emptySlots: skippedSlots.length,
                 partyPerRaid: data.partyPerRaid,
                 slotPerParty: data.slotPerParty,
                 raidId: data._id

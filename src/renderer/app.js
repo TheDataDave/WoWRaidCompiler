@@ -116,13 +116,24 @@ function parseRaidData(data) {
         const summary = parser.getSummary(result.players);
         displayPlayerSummary(summary);
         
-        if (result.warnings.length > 0) {
+        // Show warnings if any
+        if (result.warnings &amp;&amp; result.warnings.length > 0) {
             console.warn('Parsing warnings:', result.warnings);
+            const warningMsg = result.warnings.join('\n');
+            showStatus('info', `Loaded ${result.players.length} valid players. ${result.warnings.length} warnings - check console for details.`);
+        } else {
+            showStatus('success', `Successfully loaded ${result.players.length} players`);
         }
         
-        showStatus('success', `Successfully loaded ${result.players.length} players`);
+        // Show metadata info
+        if (result.metadata) {
+            console.log('Raid metadata:', result.metadata);
+        }
     } else {
-        showStatus('error', `Parsing errors: ${result.errors.join(', ')}`);
+        // Better error display
+        const errorMsg = result.errors.join('\n');
+        showStatus('error', `Failed to load raid data: ${result.errors[0]}`);
+        console.error('Parsing errors:', result.errors);
     }
 }
 
@@ -134,7 +145,7 @@ function displayPlayerSummary(summary) {
     // Total players card
     container.innerHTML += `
         <div class="summary-card">
-            <h4>Total Players</h4>
+            <h4>Valid Players</h4>
             <p style="font-size: 2em; color: #ffd700;">${summary.total}</p>
         </div>
     `;
