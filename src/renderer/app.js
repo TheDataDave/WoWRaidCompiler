@@ -284,10 +284,25 @@ function optimizeComposition() {
         return;
     }
     
-    showStatus('info', 'Optimizing raid composition...');
+    // Get selected optimization mode
+    const modeRadios = document.getElementsByName('opt-mode');
+    let selectedMode = 'global'; // default
+    for (const radio of modeRadios) {
+        if (radio.checked) {
+            selectedMode = radio.value;
+            break;
+        }
+    }
+    
+    console.log(`🎯 User selected optimization mode: ${selectedMode}`);
+    
+    showStatus('info', `Optimizing raid composition using ${selectedMode === 'global' ? 'Global Optimization' : 'Legacy Algorithm'}...`);
+    
+    // Update settings with selected mode
+    appState.settings.optimizationMode = selectedMode;
     
     const optimizer = new RaidOptimizer(appState.settings);
-    appState.optimizedResult = optimizer.optimize(appState.players);
+    appState.optimizedResult = optimizer.optimize(appState.players, selectedMode);
     
     displayCompositionResults(appState.optimizedResult);
     
@@ -296,7 +311,8 @@ function optimizeComposition() {
     document.getElementById('export-csv-btn').disabled = false;
     document.getElementById('copy-clipboard-btn').disabled = false;
     
-    showStatus('success', 'Composition optimized successfully!');
+    const modeText = selectedMode === 'global' ? 'Global Optimization' : 'Legacy Algorithm';
+    showStatus('success', `Composition optimized successfully using ${modeText}!`);
 }
 
 // Display Composition Results

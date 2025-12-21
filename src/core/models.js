@@ -202,7 +202,7 @@ class Raid {
             else if (player.roles.primary === 'healer') this.composition.healers++;
             else if (player.roles.primary === 'dps') this.composition.dps++;
             
-            if (player.roles.all.includes('utility')) this.composition.utility++;
+            if (player.roles.all && player.roles.all.includes('utility')) this.composition.utility++;
         });
 
         return this.composition;
@@ -220,6 +220,18 @@ class Raid {
         if (this.players.length === 0) return 0;
         const total = this.players.reduce((sum, p) => sum + p.gearScore, 0);
         return Math.round(total / this.players.length);
+    }
+
+    getCompositionStats() {
+        this.calculateComposition();
+        return {
+            totalPlayers: this.players.length,
+            tanks: this.composition.tanks,
+            healers: this.composition.healers,
+            dps: this.composition.dps,
+            averageGearScore: this.getAverageGearScore(),
+            classDistribution: this.getClassDistribution()
+        };
     }
 
     toJSON() {

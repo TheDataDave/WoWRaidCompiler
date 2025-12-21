@@ -157,6 +157,38 @@
                         </div>
                     </div>
 
+                    <!-- Optimization Mode Selector -->
+                    <div class="optimization-mode-section">
+                        <h3>🎯 Optimization Mode</h3>
+                        <div class="mode-options">
+                            <label class="mode-option">
+                                <input type="radio" name="opt-mode" value="global" checked>
+                                <div class="mode-details">
+                                    <strong>🌍 Global Optimization (Recommended)</strong>
+                                    <p>Build groups from scratch to maximize total raid synergy. Ignores pre-existing group assignments.</p>
+                                    <ul>
+                                        <li>✅ Prioritizes Tank + Shaman pairs</li>
+                                        <li>✅ Creates Warlock + Shadow Priest groups</li>
+                                        <li>✅ Optimizes Mage + Balance Druid synergy</li>
+                                        <li>✅ Maximizes overall raid performance</li>
+                                    </ul>
+                                </div>
+                            </label>
+                            <label class="mode-option">
+                                <input type="radio" name="opt-mode" value="keep-groups">
+                                <div class="mode-details">
+                                    <strong>📊 Keep Existing Groups</strong>
+                                    <p>Preserve pre-existing group assignments and only calculate synergy scores.</p>
+                                    <ul>
+                                        <li>📋 Maintains current group structure</li>
+                                        <li>📊 Scores groups based on synergy</li>
+                                        <li>⚠️ May result in suboptimal composition</li>
+                                    </ul>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
                     <div id="optimization-status" class="status-message hidden"></div>
 
                     <div id="composition-results" class="composition-results hidden">

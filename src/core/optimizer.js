@@ -1,5 +1,6 @@
 const { Player, Raid, Group } = require('./models');
 const SynergyCalculator = require('./synergy');
+const GlobalOptimizer = require('./global-optimizer');
 
 class RaidOptimizer {
     constructor(settings) {
@@ -9,7 +10,8 @@ class RaidOptimizer {
             healerPercentage: settings.healerPercentage || 25,
             minTanks: settings.minTanks || 2,
             classWeights: settings.classWeights || this.getDefaultClassWeights(),
-            partySize: 5
+            partySize: 5,
+            optimizationMode: settings.optimizationMode || 'global' // 'global' or 'keep-groups'
         };
         this.synergyCalc = new SynergyCalculator();
     }
@@ -581,11 +583,55 @@ class RaidOptimizer {
         }
     }
 
-    optimize(players) {
+    optimize(players, mode = null) {
+        // Use provided mode or fall back to settings
+        const optimizationMode = mode || this.settings.optimizationMode;
+
+        console.log(`\n🎯 Optimization Mode: ${optimizationMode}`);
+
+        if (optimizationMode === 'global') {
+            // Use global optimizer - build groups from scratch
+            return this.optimizeGlobal(players);
+        } else {
+            // Use legacy optimizer - keep existing groups or build with old algorithm
+            return this.optimizeLegacy(players);
+        }
+    }
+
+    optimizeGlobal(players) {
+        console.log('🌍 Using Global Optimization Algorithm');
+        
+        // Filter by faction
+        let availablePlayers = this.filterByFaction(players);
+        
+        // Remove benched players
+        availablePlayers = availablePlayers.filter(p => !p.isBenched);
+        
+        // Select best players for raid
+        const selectedPlayers = this.selectPlayers(availablePlayers);
+        
+        console.log(`✅ Selected ${selectedPlayers.length} players for optimization`);
+        
+        // Use GlobalOptimizer to build groups from scratch
+        const globalOptimizer = new GlobalOptimizer(selectedPlayers, this.settings);
+        const raid = globalOptimizer.optimizeRaid();
+        
+        return {
+            raid,
+            groups: raid.groups,
+            selectedPlayers,
+            benchedPlayers: players.filter(p => !selectedPlayers.includes(p)),
+            statistics: this.calculateStatistics(raid, raid.groups)
+        };
+    }
+
+    optimizeLegacy(players) {
+        console.log('📊 Using Legacy Optimization Algorithm (Keep Groups)');
+        
         // Select best players for raid
         const selectedPlayers = this.selectPlayers(players);
 
-        // Create optimized groups
+        // Create optimized groups using legacy algorithm
         const groups = this.createGroups(selectedPlayers);
 
         // Create raid object
