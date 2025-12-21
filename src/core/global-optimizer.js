@@ -121,20 +121,29 @@ class GlobalOptimizer {
         );
 
         // Priority 1: Tank + Shaman (CRITICAL)
-        for (const tank of tanks) {
-            for (const shaman of shamans) {
-                if (!used.has(tank.id) && !used.has(shaman.id)) {
-                    cores.push({
-                        players: [tank, shaman],
-                        score: 1000,
-                        type: 'tank-shaman',
-                        priority: 1
-                    });
-                    used.add(tank.id);
-                    used.add(shaman.id);
-                    console.log(`  🛡️ Tank+Shaman: ${tank.name} + ${shaman.name} (score: 1000)`);
-                    break;
-                }
+        // Allow multiple tanks with one shaman for tank-heavy groups
+        for (const shaman of shamans) {
+            if (used.has(shaman.id)) continue;
+            
+            // Find all available tanks for this shaman
+            const availableTanks = tanks.filter(t => !used.has(t.id));
+            
+            if (availableTanks.length > 0) {
+                // Create a tank-heavy core: up to 3 tanks + 1 shaman
+                const coreTanks = availableTanks.slice(0, Math.min(3, availableTanks.length));
+                const corePlayers = [shaman, ...coreTanks];
+                
+                cores.push({
+                    players: corePlayers,
+                    score: 1000 + (coreTanks.length - 1) * 100, // Bonus for multiple tanks
+                    type: 'tank-shaman',
+                    priority: 1
+                });
+                
+                used.add(shaman.id);
+                coreTanks.forEach(t => used.add(t.id));
+                
+                console.log(`  🛡️ Tank-Heavy+Shaman: ${coreTanks.map(t => t.name).join(' + ')} + ${shaman.name} (score: ${1000 + (coreTanks.length - 1) * 100})`);
             }
         }
 
@@ -227,6 +236,7 @@ class GlobalOptimizer {
 
     /**
      * Seed groups with synergy cores
+     * Now allows multiple tanks per group if synergy supports it
      */
     seedGroups(cores) {
         let groupIndex = 0;
@@ -240,6 +250,17 @@ class GlobalOptimizer {
             }
 
             console.log(`  ✅ Group ${group.id}: Added ${core.type} core (${core.players.map(p => p.name).join(' + ')})`);
+            
+            // For tank-shaman cores, check if we can add more tanks to this group
+            if (core.type === 'tank-shaman') {
+                // This group is now a tank-heavy group, will be filled with more tanks/melee in fillGroups
+                group.groupType = 'tank-heavy';
+            } else if (core.type === 'warlock-spriest') {
+                group.groupType = 'warlock';
+            } else if (core.type === 'mage-boomkin') {
+                group.groupType = 'mage';
+            }
+            
             groupIndex++;
         }
     }
@@ -255,36 +276,53 @@ class GlobalOptimizer {
         const remainingPlayers = this.players.filter(p => !assignedIds.has(p.id));
         console.log(`  📊 Remaining players to assign: ${remainingPlayers.length}`);
 
-        // Categorize remaining players
-        const melee = remainingPlayers.filter(p => 
-            this.synergyCalc.isMelee(p) && !this.synergyCalc.isTank(p)
+        // Categorize remaining players with priority for rogues
+        const warriors = remainingPlayers.filter(p => 
+            p.class === 'Warrior' && !this.synergyCalc.isTank(p)
         );
+        const rogues = remainingPlayers.filter(p => p.class === 'Rogue');
+        const feralDruids = remainingPlayers.filter(p => this.synergyCalc.isFeralDruid(p));
+        const enhancementShamans = remainingPlayers.filter(p => 
+            p.class === 'Shaman' && p.spec && p.spec.includes('Enhancement')
+        );
+        
+        // All melee DPS (for general melee groups)
+        const allMelee = [...warriors, ...rogues, ...feralDruids, ...enhancementShamans];
+        
         const hunters = remainingPlayers.filter(p => this.synergyCalc.isHunter(p));
         const casters = remainingPlayers.filter(p => this.synergyCalc.isCaster(p));
+        const healers = remainingPlayers.filter(p => p.roles.primary === 'healer');
         const otherPlayers = remainingPlayers.filter(p => 
-            !melee.includes(p) && !hunters.includes(p) && !casters.includes(p)
+            !allMelee.includes(p) && !hunters.includes(p) && !casters.includes(p) && !healers.includes(p)
         );
 
-        // Phase 1: Fill Tank+Shaman groups with melee DPS (priority)
-        console.log(`  🎯 Phase 1: Filling Tank+Shaman groups with melee DPS`);
+        // Phase 1: Fill Tank+Shaman groups with melee DPS (PRIORITY: Warriors and Rogues)
+        console.log(`  🎯 Phase 1: Filling Tank+Shaman groups with Warriors and Rogues`);
         const tankShamanGroups = this.groups.filter(g => {
             const hasTank = g.players.some(p => this.synergyCalc.isTank(p));
             const hasShaman = g.players.some(p => this.synergyCalc.isShaman(p));
             return hasTank && hasShaman && g.players.length < this.settings.partySize;
         });
 
-        // Fill Tank+Shaman groups with melee first (ideal: 3 melee or 2 melee + 1 hunter)
+        // Fill Tank+Shaman groups with Warriors and Rogues first (they benefit most from Windfury)
         for (const group of tankShamanGroups) {
             const slotsNeeded = this.settings.partySize - group.players.length;
             
-            // Try to fill with melee first
+            // Priority order: Warriors > Rogues > Feral Druids > Enhancement Shamans
+            const meleeByPriority = [
+                ...warriors.filter(w => !assignedIds.has(w.id)),
+                ...rogues.filter(r => !assignedIds.has(r.id)),
+                ...feralDruids.filter(f => !assignedIds.has(f.id)),
+                ...enhancementShamans.filter(e => !assignedIds.has(e.id))
+            ];
+            
             let meleeAdded = 0;
-            for (let i = 0; i < Math.min(slotsNeeded, 3) && melee.length > 0; i++) {
-                // Find best melee for this group
+            for (let i = 0; i < Math.min(slotsNeeded, 3) && meleeByPriority.length > 0; i++) {
+                // Find best melee for this group from priority list
                 let bestMelee = null;
                 let bestScore = -Infinity;
                 
-                for (const m of melee) {
+                for (const m of meleeByPriority) {
                     if (assignedIds.has(m.id)) continue;
                     const score = this.calculateIncrementalSynergy(group, m);
                     if (score > bestScore) {
@@ -298,6 +336,10 @@ class GlobalOptimizer {
                     assignedIds.add(bestMelee.id);
                     meleeAdded++;
                     console.log(`  ➕ Group ${group.id}: Added ${bestMelee.name} (${bestMelee.class} ${bestMelee.spec}) [Melee] - Synergy: ${bestScore.toFixed(0)}`);
+                    
+                    // Remove from priority list
+                    const index = meleeByPriority.findIndex(m => m.id === bestMelee.id);
+                    if (index > -1) meleeByPriority.splice(index, 1);
                 }
             }
             
@@ -320,6 +362,37 @@ class GlobalOptimizer {
                     assignedIds.add(bestHunter.id);
                     console.log(`  ➕ Group ${group.id}: Added ${bestHunter.name} (Hunter) [Trueshot Aura] - Synergy: ${bestScore.toFixed(0)}`);
                 }
+            }
+        }
+        
+        // Phase 1b: Create additional melee groups if we have leftover Warriors/Rogues and Shamans
+        console.log(`  🎯 Phase 1b: Creating additional melee groups`);
+        const unassignedMelee = allMelee.filter(m => !assignedIds.has(m.id));
+        const unassignedShamans = remainingPlayers.filter(p => 
+            this.synergyCalc.isShaman(p) && !assignedIds.has(p.id)
+        );
+        
+        if (unassignedMelee.length >= 3 && unassignedShamans.length > 0) {
+            // Find an empty group
+            const emptyGroup = this.groups.find(g => g.players.length === 0);
+            if (emptyGroup) {
+                // Add shaman first
+                const shaman = unassignedShamans[0];
+                emptyGroup.addPlayer(shaman);
+                assignedIds.add(shaman.id);
+                console.log(`  ➕ Group ${emptyGroup.id}: Added ${shaman.name} (Shaman) [New Melee Group]`);
+                
+                // Add up to 4 melee
+                for (let i = 0; i < Math.min(4, unassignedMelee.length); i++) {
+                    const melee = unassignedMelee[i];
+                    if (!assignedIds.has(melee.id)) {
+                        emptyGroup.addPlayer(melee);
+                        assignedIds.add(melee.id);
+                        console.log(`  ➕ Group ${emptyGroup.id}: Added ${melee.name} (${melee.class}) [Melee]`);
+                    }
+                }
+                
+                emptyGroup.groupType = 'melee';
             }
         }
 
