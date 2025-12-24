@@ -1,4 +1,5 @@
 const { Player } = require("./models");
+const { normalizeStatus: normalizeStatusEnum, isValidStatus, shouldExclude } = require('./status-enums');
 
 class RaidHelperParser {
 	constructor() {
@@ -50,26 +51,36 @@ class RaidHelperParser {
 	}
 
 	/* ────────────────────────────────────────────── */
-	/* STATUS NORMALIZATION (SINGLE SOURCE OF TRUTH)  */
+	/* STATUS NORMALIZATION                           */
 	/* ────────────────────────────────────────────── */
 
 	normalizeStatus(entry) {
-		// API payload
+		// Determine raw status from entry
+		let rawStatus = null;
+		
+		// API payload - className field
 		if (entry.className) {
-			if (entry.className === "Absence") return "absence";
-			if (entry.className === "Bench") return "bench";
-			if (entry.className === "Late") return "late";
-			if (entry.className === "Tentative") return "tentative";
+			rawStatus = entry.className;
 		}
-
-		// JSON import payload
-		if (entry.isAbsence || entry.class === "Absence") return "absence";
-		if (entry.isBenched || entry.class === "Bench") return "bench";
-		if (entry.isLate || entry.class === "Late") return "late";
-		if (entry.isTentative || entry.class === "Tentative")
-			return "tentative";
-
-		return "confirmed";
+		// JSON import payload - boolean flags
+		else if (entry.isAbsence || entry.class === "Absence") {
+			rawStatus = "absence";
+		}
+		else if (entry.isBenched || entry.class === "Bench") {
+			rawStatus = "bench";
+		}
+		else if (entry.isLate || entry.class === "Late") {
+			rawStatus = "late";
+		}
+		else if (entry.isTentative || entry.class === "Tentative") {
+			rawStatus = "tentative";
+		}
+		else {
+			rawStatus = "confirmed";
+		}
+		
+		// Use the centralized status normalization
+		return normalizeStatusEnum(rawStatus, "confirmed");
 	}
 
 	/* ────────────────────────────────────────────── */
@@ -98,9 +109,9 @@ class RaidHelperParser {
 
 			const status = this.normalizeStatus(entry);
 
-			/* ─────────────── ABSENCE ─────────────── */
+			/* ─────────── ABSENCE ─────────── */
 
-			if (status === "absence") {
+			if (status === "absent") {
 				players.push(
 					new Player({
 						userid: entry.userid || entry.userId,
@@ -113,7 +124,7 @@ class RaidHelperParser {
 				return;
 			}
 
-			/* ─────────────── CLASS RESOLUTION ─────────────── */
+			/* ─────────── CLASS RESOLUTION ─────────── */
 
 			let wowClass =
 				entry.className || entry.class || entry.class1 || null;
@@ -138,7 +149,7 @@ class RaidHelperParser {
 				return;
 			}
 
-			/* ─────────────── PLAYER CREATION ─────────────── */
+			/* ─────────── PLAYER CREATION ─────────── */
 
 			players.push(
 				new Player({
@@ -156,13 +167,10 @@ class RaidHelperParser {
 					isConfirmed: status === "confirmed",
 					isTentative: status === "tentative",
 					isLate: status === "late",
-					isBenched: status === "bench",
+					isBenched: status === "benched",
 					isAbsence: false,
 
 					note: entry.note,
-
-					partyId: entry.partyId,
-					slotId: entry.slotId,
 				})
 			);
 		});
@@ -171,145 +179,65 @@ class RaidHelperParser {
 			success: true,
 			players,
 			warnings,
-			metadata: {
-				totalSlots: source.length,
+			stats: {
 				parsedPlayers: players.length,
 				emptySlots,
-				byStatus: this.countByStatus(players),
-				raidId: data._id || data.id,
-				partyPerRaid: data.partyPerRaid,
-				slotPerParty: data.slotPerParty,
 			},
 		};
 	}
 
 	/* ────────────────────────────────────────────── */
-	/* CLASS INFERENCE (LAST RESORT ONLY)              */
+	/* CLASS INFERENCE                                */
 	/* ────────────────────────────────────────────── */
 
 	inferClassFromSpec(spec) {
-		const map = {
+		if (!spec) return null;
+
+		const specMap = {
+			// Warrior
 			Arms: "Warrior",
 			Fury: "Warrior",
 			Protection: "Warrior",
 
-			Holy1: "Paladin",
-			Protection1: "Paladin",
+			// Paladin
+			Holy: "Paladin",
 			Retribution: "Paladin",
 
-			Beastmastery: "Hunter",
+			// Hunter
+			"Beast Mastery": "Hunter",
 			Marksmanship: "Hunter",
 			Survival: "Hunter",
 
+			// Rogue
 			Assassination: "Rogue",
 			Combat: "Rogue",
 			Subtlety: "Rogue",
 
+			// Priest
 			Discipline: "Priest",
-			Holy: "Priest",
 			Shadow: "Priest",
-			Smite: "Priest",
 
+			// Shaman
 			Elemental: "Shaman",
 			Enhancement: "Shaman",
-			Restoration1: "Shaman",
+			Restoration: "Shaman",
 
+			// Mage
 			Arcane: "Mage",
 			Fire: "Mage",
 			Frost: "Mage",
 
+			// Warlock
 			Affliction: "Warlock",
 			Demonology: "Warlock",
 			Destruction: "Warlock",
 
+			// Druid
 			Balance: "Druid",
-			Dreamstate: "Druid",
 			Feral: "Druid",
-			Restoration: "Druid",
-			Guardian: "Druid",
 		};
 
-		return map[spec] || null;
-	}
-
-	/* ────────────────────────────────────────────── */
-	/* SUMMARY HELPERS                                */
-	/* ────────────────────────────────────────────── */
-
-	getSummary(players) {
-		const summary = {
-			total: players.length,
-
-			confirmed: 0,
-			tentative: 0,
-			late: 0,
-			benched: 0,
-			absence: 0,
-
-			byClass: {},
-			byRole: {
-				tank: 0,
-				healer: 0,
-				dps: 0,
-			},
-		};
-
-		players.forEach((player) => {
-			switch (player.status) {
-				case "confirmed":
-					summary.confirmed++;
-					break;
-				case "tentative":
-					summary.tentative++;
-					break;
-				case "late":
-					summary.late++;
-					break;
-				case "bench":
-					summary.benched++;
-					break;
-				case "absence":
-					summary.absence++;
-					return;
-			}
-
-			if (player.class) {
-				summary.byClass[player.class] =
-					(summary.byClass[player.class] || 0) + 1;
-			}
-
-			if (player.roles && player.roles.primary) {
-				summary.byRole[player.roles.primary]++;
-			}
-		});
-
-		return summary;
-	}
-
-	countByStatus(players) {
-		return players.reduce(
-			(acc, p) => {
-				acc[p.status]++;
-				return acc;
-			},
-			{
-				confirmed: 0,
-				tentative: 0,
-				late: 0,
-				bench: 0,
-				absence: 0,
-			}
-		);
-	}
-
-	/* ────────────────────────────────────────────── */
-	/* OPTIMIZER INPUT FILTER                         */
-	/* ────────────────────────────────────────────── */
-
-	getRaidParticipants(players) {
-		return players.filter(
-			(p) => p.status === "confirmed" || p.status === "late"
-		);
+		return specMap[spec] || null;
 	}
 }
 

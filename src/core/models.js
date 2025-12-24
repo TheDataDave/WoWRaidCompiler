@@ -26,6 +26,9 @@ class Player {
 		// ───────── DERIVED DATA ─────────
 		this.roles = this.determineRoles();
 		this.score = 0;
+		// Add simple 'role' field for new optimizer (uses explicit role if provided, otherwise primary role)
+		this.role = data.role || this.roles.primary;
+		this.userid = this.id; // Alias for compatibility
 	}
 
 	generateId() {
