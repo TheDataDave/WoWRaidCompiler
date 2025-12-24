@@ -929,3 +929,414 @@ footer {
 ::-webkit-scrollbar-thumb:hover {
 	background: rgba(102, 126, 234, 0.7);
 }
+/* Raid Comp Tool Styles */
+.raidcomp-section {
+	padding: 2rem;
+}
+
+.raidcomp-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 2rem;
+	flex-wrap: wrap;
+	gap: 1rem;
+}
+
+.raidcomp-actions {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+.raidcomp-container {
+	display: grid;
+	grid-template-columns: 300px 1fr;
+	gap: 2rem;
+	margin-top: 2rem;
+}
+
+/* Members Panel */
+.members-panel {
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 8px;
+	padding: 1.5rem;
+	height: fit-content;
+	max-height: 800px;
+	overflow-y: auto;
+}
+
+.member-filters {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+	padding-bottom: 1rem;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.member-filters label {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	cursor: pointer;
+	font-size: 0.9rem;
+}
+
+.members-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.member-item {
+	background: rgba(255, 255, 255, 0.05);
+	border: 2px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	padding: 0.75rem;
+	cursor: move;
+	transition: all 0.2s;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.member-item:hover {
+	background: rgba(255, 255, 255, 0.1);
+	border-color: rgba(102, 126, 234, 0.5);
+	transform: translateX(5px);
+}
+
+.member-item.dragging {
+	opacity: 0.5;
+	transform: rotate(2deg);
+}
+
+.member-info {
+	flex: 1;
+}
+
+.member-name {
+	font-weight: bold;
+	margin-bottom: 0.25rem;
+}
+
+.member-details {
+	font-size: 0.85rem;
+	color: #aaa;
+}
+
+.member-status {
+	padding: 0.25rem 0.5rem;
+	border-radius: 4px;
+	font-size: 0.75rem;
+	font-weight: bold;
+	text-transform: uppercase;
+}
+
+.member-status.signup {
+	background: rgba(76, 175, 80, 0.3);
+	color: #4caf50;
+}
+
+.member-status.tentative {
+	background: rgba(255, 193, 7, 0.3);
+	color: #ffc107;
+}
+
+.member-status.bench {
+	background: rgba(156, 39, 176, 0.3);
+	color: #9c27b0;
+}
+
+.member-status.late {
+	background: rgba(255, 152, 0, 0.3);
+	color: #ff9800;
+}
+
+.member-status.absent {
+	background: rgba(244, 67, 54, 0.3);
+	color: #f44336;
+}
+
+.member-edit-btn {
+	background: rgba(102, 126, 234, 0.2);
+	border: 1px solid rgba(102, 126, 234, 0.5);
+	color: #667eea;
+	padding: 0.25rem 0.5rem;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 0.75rem;
+	transition: all 0.2s;
+}
+
+.member-edit-btn:hover {
+	background: rgba(102, 126, 234, 0.4);
+}
+
+/* Groups Panel */
+.groups-panel {
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 8px;
+	padding: 1.5rem;
+}
+
+.raid-groups {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+	gap: 1rem;
+}
+
+.raid-group {
+	background: rgba(255, 255, 255, 0.05);
+	border: 2px solid rgba(255, 255, 255, 0.1);
+	border-radius: 8px;
+	padding: 1rem;
+	min-height: 200px;
+}
+
+.raid-group.drag-over {
+	border-color: rgba(102, 126, 234, 0.8);
+	background: rgba(102, 126, 234, 0.1);
+}
+
+.group-header {
+	font-weight: bold;
+	margin-bottom: 1rem;
+	padding-bottom: 0.5rem;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.group-count {
+	font-size: 0.85rem;
+	color: #aaa;
+}
+
+.group-members {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.group-member {
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 4px;
+	padding: 0.5rem;
+	font-size: 0.9rem;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	cursor: move;
+	transition: all 0.2s;
+}
+
+.group-member:hover {
+	background: rgba(255, 255, 255, 0.1);
+	border-color: rgba(102, 126, 234, 0.5);
+}
+
+.group-member-info {
+	flex: 1;
+}
+
+.group-member-name {
+	font-weight: bold;
+}
+
+.group-member-class {
+	font-size: 0.8rem;
+	color: #aaa;
+}
+
+.group-member-remove {
+	background: rgba(244, 67, 54, 0.2);
+	border: 1px solid rgba(244, 67, 54, 0.5);
+	color: #f44336;
+	padding: 0.25rem 0.5rem;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 0.75rem;
+	transition: all 0.2s;
+}
+
+.group-member-remove:hover {
+	background: rgba(244, 67, 54, 0.4);
+}
+
+/* Change Log */
+.change-log {
+	margin-top: 2rem;
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 8px;
+	padding: 1.5rem;
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+.change-log h3 {
+	margin-bottom: 1rem;
+}
+
+#change-log-content {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.change-item {
+	background: rgba(255, 255, 255, 0.05);
+	border-left: 3px solid rgba(102, 126, 234, 0.5);
+	padding: 0.75rem;
+	border-radius: 4px;
+	font-size: 0.9rem;
+}
+
+.change-item.new {
+	border-left-color: rgba(76, 175, 80, 0.8);
+}
+
+.change-item.modified {
+	border-left-color: rgba(255, 193, 7, 0.8);
+}
+
+.change-item.removed {
+	border-left-color: rgba(244, 67, 54, 0.8);
+}
+
+.change-timestamp {
+	font-size: 0.75rem;
+	color: #888;
+	margin-top: 0.25rem;
+}
+
+/* Modal for Import/Edit */
+.modal {
+	display: none;
+	position: fixed;
+	z-index: 1000;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.8);
+	align-items: center;
+	justify-content: center;
+}
+
+.modal.active {
+	display: flex;
+}
+
+.modal-content {
+	background: #1a1a2e;
+	border-radius: 12px;
+	padding: 2rem;
+	max-width: 600px;
+	width: 90%;
+	max-height: 80vh;
+	overflow-y: auto;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1.5rem;
+}
+
+.modal-close {
+	background: none;
+	border: none;
+	color: #fff;
+	font-size: 1.5rem;
+	cursor: pointer;
+	padding: 0;
+	width: 30px;
+	height: 30px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	transition: background 0.2s;
+}
+
+.modal-close:hover {
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-body {
+	margin-bottom: 1.5rem;
+}
+
+.modal-body textarea {
+	width: 100%;
+	min-height: 300px;
+	background: rgba(0, 0, 0, 0.3);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	padding: 1rem;
+	color: #fff;
+	font-family: "Courier New", monospace;
+	font-size: 0.9rem;
+	resize: vertical;
+}
+
+.modal-body input[type="text"] {
+	width: 100%;
+	background: rgba(0, 0, 0, 0.3);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	padding: 0.75rem;
+	color: #fff;
+	font-size: 1rem;
+	margin-bottom: 1rem;
+}
+
+.modal-body select {
+	width: 100%;
+	background: rgba(0, 0, 0, 0.3);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	padding: 0.75rem;
+	color: #fff;
+	font-size: 1rem;
+	margin-bottom: 1rem;
+}
+
+.modal-footer {
+	display: flex;
+	gap: 1rem;
+	justify-content: flex-end;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+	.raidcomp-container {
+		grid-template-columns: 1fr;
+	}
+
+	.raid-groups {
+		grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	}
+}
+
+@media (max-width: 768px) {
+	.raidcomp-header {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.raidcomp-actions {
+		width: 100%;
+	}
+
+	.raidcomp-actions button {
+		flex: 1;
+		min-width: 120px;
+	}
+}

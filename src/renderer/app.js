@@ -345,6 +345,7 @@ function hideEventError() {
 
 // Parse Raid Data
 function parseRaidData(data) {
+	console.log("data:", data);
 	const parser = new RaidHelperParser();
 	const result = parser.parse(data);
 
@@ -375,15 +376,16 @@ function parseRaidData(data) {
 }
 
 // Display Player Summary
-function displayPlayerSummary(summary) {
+function displayPlayerSummary(players) {
 	const container = document.getElementById("player-summary");
 	container.innerHTML = "";
+	console.log("players:", players);
 
 	// Total players card
 	container.innerHTML += `
         <div class="summary-card">
             <h4>Valid Players</h4>
-            <p style="font-size: 2em; color: #ffd700;">${summary.total}</p>
+            <p style="font-size: 2em; color: #ffd700;">${players.total}</p>
         </div>
     `;
 
@@ -391,9 +393,11 @@ function displayPlayerSummary(summary) {
 	container.innerHTML += `
         <div class="summary-card">
             <h4>Status</h4>
-            <p>✅ Confirmed: ${summary.confirmed}</p>
-            <p>❓ Tentative: ${summary.tentative}</p>
-            <p>🪑 Benched: ${summary.benched}</p>
+            <p>✅ Confirmed: ${players.confirmed}</p>
+            <p>❓ Tentative: ${players.tentative}</p>
+            <p>🪑 Benched: ${players.benched}</p>
+            <p>❌ Absent: ${players.absence}</p>
+            <p>⏳ Late: ${players.late}</p>
         </div>
     `;
 
@@ -401,15 +405,15 @@ function displayPlayerSummary(summary) {
 	container.innerHTML += `
         <div class="summary-card">
             <h4>Roles</h4>
-            <p>🛡️ Tanks: ${summary.byRole.tank}</p>
-            <p>💚 Healers: ${summary.byRole.healer}</p>
-            <p>⚔️ DPS: ${summary.byRole.dps}</p>
+            <p>🛡️ Tanks: ${players.byRole.tank}</p>
+            <p>💚 Healers: ${players.byRole.healer}</p>
+            <p>⚔️ DPS: ${players.byRole.dps}</p>
         </div>
     `;
 
 	// Class breakdown
 	let classHTML = '<div class="summary-card"><h4>Classes</h4>';
-	Object.entries(summary.byClass).forEach(([className, count]) => {
+	Object.entries(players.byClass).forEach(([className, count]) => {
 		classHTML += `<p>${className}: ${count}</p>`;
 	});
 	classHTML += "</div>";
@@ -780,31 +784,31 @@ function copyToClipboard() {
 	if (!appState.optimizedResult) return;
 
 	const parser = new RaidHelperParser();
-	const text = parser.exportToText(
-		appState.optimizedResult.raid,
-		appState.optimizedResult.groups
-	);
+	// const text = parser.exportToText(
+	// 	appState.optimizedResult.raid,
+	// 	appState.optimizedResult.groups
+	// );
 
-	navigator.clipboard
-		.writeText(text)
-		.then(() => {
-			showStatus("success", "Copied to clipboard!");
-		})
-		.catch((err) => {
-			showStatus("error", `Failed to copy: ${err.message}`);
-		});
+	// navigator.clipboard
+	// 	.writeText(text)
+	// 	.then(() => {
+	// 		showStatus("success", "Copied to clipboard!");
+	// 	})
+	// 	.catch((err) => {
+	// 		showStatus("error", `Failed to copy: ${err.message}`);
+	// 	});
 }
 
 function updateExportPreview() {
 	if (!appState.optimizedResult) return;
 
 	const parser = new RaidHelperParser();
-	const text = parser.exportToText(
-		appState.optimizedResult.raid,
-		appState.optimizedResult.groups
-	);
+	// const text = parser.exportToText(
+	// 	appState.optimizedResult.raid,
+	// 	appState.optimizedResult.groups
+	// );
 
-	document.getElementById("export-preview-text").textContent = text;
+	// document.getElementById("export-preview-text").textContent = text;
 }
 
 // Status Messages

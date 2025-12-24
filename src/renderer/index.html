@@ -19,6 +19,7 @@
         <nav class="tabs">
             <button class="tab-btn active" data-tab="upload">📁 Upload</button>
             <button class="tab-btn" data-tab="settings">⚙️ Settings</button>
+            <button class="tab-btn" data-tab="raidcomp">👥 Raid Comp Tool</button>
             <button class="tab-btn" data-tab="composition">🎯 Composition</button>
             <button class="tab-btn" data-tab="export">💾 Export</button>
         </nav>
@@ -191,6 +192,60 @@
                 </div>
             </div>
 
+            <!-- Raid Comp Tool Tab -->
+            <div id="raidcomp-tab" class="tab-content">
+                <div class="raidcomp-section">
+                    <div class="raidcomp-header">
+                        <h2>Raid Group Composition Tool</h2>
+                        <div class="raidcomp-actions">
+                            <button class="btn btn-secondary" id="refresh-members-btn" disabled>🔄 Refresh Data</button>
+                            <button class="btn btn-secondary" id="import-rh-json-btn" disabled>📥 Import Raid Helper
+                                JSON</button>
+                            <button class="btn btn-secondary" id="undo-btn" disabled>↶ Undo</button>
+                            <button class="btn btn-secondary" id="redo-btn" disabled>↷ Redo</button>
+                            <button class="btn btn-primary" id="save-state-btn" disabled>💾 Save State</button>
+                            <button class="btn btn-primary" id="load-state-btn" disabled>📂 Load State</button>
+                        </div>
+                    </div>
+
+                    <div id="raidcomp-status" class="status-message hidden"></div>
+
+                    <!-- Member List -->
+                    <div id="raidcomp-container" class="raidcomp-container hidden">
+                        <div class="members-panel">
+                            <h3>Available Members</h3>
+                            <div class="member-filters">
+                                <label><input type="checkbox" class="status-filter" value="signup" checked> Signed
+                                    Up</label>
+                                <label><input type="checkbox" class="status-filter" value="tentative" checked>
+                                    Tentative</label>
+                                <label><input type="checkbox" class="status-filter" value="bench" checked>
+                                    Benched</label>
+                                <label><input type="checkbox" class="status-filter" value="late" checked> Late</label>
+                                <label><input type="checkbox" class="status-filter" value="absent" checked>
+                                    Absent</label>
+                            </div>
+                            <div id="members-list" class="members-list">
+                                <!-- Members will be populated here -->
+                            </div>
+                        </div>
+
+                        <div class="groups-panel">
+                            <h3>Raid Groups</h3>
+                            <div id="raid-groups" class="raid-groups">
+                                <!-- Groups will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Change Log -->
+                    <div id="change-log" class="change-log hidden">
+                        <h3>Recent Changes</h3>
+                        <div id="change-log-content"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Composition Tab -->
             <div id="composition-tab" class="tab-content">
                 <div class="composition-section">
@@ -290,7 +345,68 @@
         </footer>
     </div>
 
+    <!-- Modals -->
+    <div id="import-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Import Raid Helper JSON</h3>
+                <button class="modal-close" onclick="closeImportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p>Paste the Raid Helper composition JSON data below:</p>
+                <textarea id="import-json-textarea" placeholder='{"groups": [...], "members": [...]}'></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="processImportJSON()">Import</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-member-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Member</h3>
+                <button class="modal-close" onclick="closeEditModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <label>Name:</label>
+                <input type="text" id="edit-member-name" placeholder="Member Name">
+
+                <label>Class:</label>
+                <select id="edit-member-class">
+                    <option value="Warrior">Warrior</option>
+                    <option value="Rogue">Rogue</option>
+                    <option value="Hunter">Hunter</option>
+                    <option value="Mage">Mage</option>
+                    <option value="Warlock">Warlock</option>
+                    <option value="Priest">Priest</option>
+                    <option value="Druid">Druid</option>
+                    <option value="Shaman">Shaman</option>
+                    <option value="Paladin">Paladin</option>
+                </select>
+
+                <label>Spec:</label>
+                <input type="text" id="edit-member-spec" placeholder="Specialization">
+
+                <label>Status:</label>
+                <select id="edit-member-status">
+                    <option value="signup">Signed Up</option>
+                    <option value="tentative">Tentative</option>
+                    <option value="bench">Benched</option>
+                    <option value="late">Late</option>
+                    <option value="absent">Absent</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveEditedMember()">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
+    <script src="raidcomp-tool.js"></script>
 </body>
 
 </html>

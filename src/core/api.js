@@ -73,10 +73,8 @@ class RaidHelperAPI {
 			return eventData;
 		}
 
-		// Filter out "Absence" entries - these are players who can't make it
-		const validSignups = eventData.signUps.filter(
-			(signup) => signup.className !== "Absence"
-		);
+		// Keep all signups including "Absence" entries so we can see everyone at a glance
+		const validSignups = eventData.signUps;
 
 		// Transform signUps to raidDrop format expected by parser
 		const raidDrop = validSignups.map((signup) => ({
