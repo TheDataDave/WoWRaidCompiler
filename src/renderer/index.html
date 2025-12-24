@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WoW Classic Raid Composition Optimizer</title>
     <link rel="stylesheet" href="styles.css">
-<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+    <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -25,15 +27,43 @@
             <!-- Upload Tab -->
             <div id="upload-tab" class="tab-content active">
                 <div class="upload-section">
-                    <h2>Import Raid Helper JSON</h2>
-                    <div class="upload-area" id="upload-area">
-                        <div class="upload-icon">📤</div>
-                        <p>Click to select Raid Helper JSON file</p>
-                        <button class="btn btn-primary" id="select-file-btn">Select File</button>
+                    <h2>Raid Helper Events</h2>
+
+                    <!-- Event List Section -->
+                    <div class="event-list-section">
+                        <div class="event-list-header">
+                            <h3>Available Events</h3>
+                            <button class="btn btn-secondary" id="refresh-events-btn">🔄 Refresh Events</button>
+                        </div>
+
+                        <div id="event-loading" class="loading-indicator hidden">
+                            <div class="spinner"></div>
+                            <p>Loading events...</p>
+                        </div>
+
+                        <div id="event-error" class="error-message hidden"></div>
+
+                        <div id="event-list" class="event-list">
+                            <!-- Events will be populated here -->
+                        </div>
                     </div>
+
+                    <!-- Selected Event Details -->
+                    <div id="event-details" class="event-details hidden">
+                        <h3>Event Details</h3>
+                        <div id="event-details-content">
+                            <!-- Event details will be populated here -->
+                        </div>
+                        <div class="event-actions">
+                            <button class="btn btn-primary" id="load-event-btn">Load Event Data</button>
+                            <button class="btn btn-secondary" id="cancel-event-btn">Cancel</button>
+                        </div>
+                    </div>
+
+                    <!-- Loaded Data Summary -->
                     <div id="file-info" class="file-info hidden">
-                        <h3>File Loaded</h3>
-                        <p id="file-path"></p>
+                        <h3>Event Data Loaded</h3>
+                        <p id="event-info"></p>
                         <div id="player-summary"></div>
                     </div>
                 </div>
@@ -43,7 +73,7 @@
             <div id="settings-tab" class="tab-content">
                 <div class="settings-section">
                     <h2>Configuration</h2>
-                    
+
                     <div class="setting-group">
                         <h3>Battle.net API Credentials</h3>
                         <div class="form-group">
@@ -62,6 +92,21 @@
                                 <option value="kr">KR</option>
                                 <option value="tw">TW</option>
                             </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Raid Helper API Credentials</h3>
+                        <p>To find API Key use "/apikey show" command in discord.</p>
+                        <div class="form-group">
+                            <label for="api-key">API Key:</label>
+                            <input type="text" id="api-key" placeholder="Enter your API Key">
+                        </div>
+                        <div class="form-group">
+                            <p>Server ID: 1. Enable Developer Mode in Discord 2. Right Click server at bottom "Copy
+                                Server ID"</p>
+                            <label for="api-secret">Server ID:</label>
+                            <input type="text" id="server-id" placeholder="Enter your Server ID">
                         </div>
                     </div>
 
@@ -165,7 +210,8 @@
                                 <input type="radio" name="opt-mode" value="global" checked>
                                 <div class="mode-details">
                                     <strong>🌍 Global Optimization (Recommended)</strong>
-                                    <p>Build groups from scratch to maximize total raid synergy. Ignores pre-existing group assignments.</p>
+                                    <p>Build groups from scratch to maximize total raid synergy. Ignores pre-existing
+                                        group assignments.</p>
                                     <ul>
                                         <li>✅ Prioritizes Tank + Shaman pairs</li>
                                         <li>✅ Creates Warlock + Shadow Priest groups</li>
@@ -200,7 +246,7 @@
                             </div>
                         </div>
                         <div id="groups-container" class="groups-container"></div>
-                        
+
                         <div class="composition-stats">
                             <h3>Composition Statistics</h3>
                             <div id="stats-container"></div>
@@ -246,4 +292,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>
