@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WoW Classic Raid Composition Optimizer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>⚔️ WoW Classic Raid Composition Optimizer</h1>
+            <p class="subtitle">Optimize your raid composition with Battle.net API integration</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="upload">📁 Upload</button>
+            <button class="tab-btn" data-tab="settings">⚙️ Settings</button>
+            <button class="tab-btn" data-tab="raidcomp">👥 Raid Comp Tool</button>
+            <button class="tab-btn" data-tab="composition">🎯 Composition</button>
+            <button class="tab-btn" data-tab="export">💾 Export</button>
+        </nav>
+
+        <main>
+            <!-- Upload Tab -->
+            <div id="upload-tab" class="tab-content active">
+                <div class="upload-section">
+                    <h2>Raid Helper Events</h2>
+
+                    <!-- Event List Section -->
+                    <div class="event-list-section">
+                        <div class="event-list-header">
+                            <h3>Available Events</h3>
+                            <button class="btn btn-secondary" id="refresh-events-btn">🔄 Refresh Events</button>
+                        </div>
+
+                        <div id="event-loading" class="loading-indicator hidden">
+                            <div class="spinner"></div>
+                            <p>Loading events...</p>
+                        </div>
+
+                        <div id="event-error" class="error-message hidden"></div>
+
+                        <div id="event-list" class="event-list">
+                            <!-- Events will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Selected Event Details -->
+                    <div id="event-details" class="event-details hidden">
+                        <h3>Event Details</h3>
+                        <div id="event-details-content">
+                            <!-- Event details will be populated here -->
+                        </div>
+                        <div class="event-actions">
+                            <button class="btn btn-primary" id="load-event-btn">Load Event Data</button>
+                            <button class="btn btn-secondary" id="cancel-event-btn">Cancel</button>
+                        </div>
+                    </div>
+
+                    <!-- Loaded Data Summary -->
+                    <div id="file-info" class="file-info hidden">
+                        <h3>Event Data Loaded</h3>
+                        <p id="event-info"></p>
+                        <div id="player-summary"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings-tab" class="tab-content">
+                <div class="settings-section">
+                    <h2>Configuration</h2>
+
+                    <div class="setting-group">
+                        <h3>Battle.net API Credentials</h3>
+                        <div class="form-group">
+                            <label for="client-id">Client ID:</label>
+                            <input type="text" id="client-id" placeholder="Enter your Battle.net Client ID">
+                        </div>
+                        <div class="form-group">
+                            <label for="client-secret">Client Secret:</label>
+                            <input type="password" id="client-secret" placeholder="Enter your Battle.net Client Secret">
+                        </div>
+                        <div class="form-group">
+                            <label for="region">Region:</label>
+                            <select id="region">
+                                <option value="us">US</option>
+                                <option value="eu">EU</option>
+                                <option value="kr">KR</option>
+                                <option value="tw">TW</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Raid Helper API Credentials</h3>
+                        <p>To find API Key use "/apikey show" command in discord.</p>
+                        <div class="form-group">
+                            <label for="api-key">API Key:</label>
+                            <input type="text" id="api-key" placeholder="Enter your API Key">
+                        </div>
+                        <div class="form-group">
+                            <p>Server ID: 1. Enable Developer Mode in Discord 2. Right Click server at bottom "Copy
+                                Server ID"</p>
+                            <label for="api-secret">Server ID:</label>
+                            <input type="text" id="server-id" placeholder="Enter your Server ID">
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Raid Configuration</h3>
+                        <div class="form-group">
+                            <label for="raid-size">Raid Size:</label>
+                            <select id="raid-size">
+                                <option value="5">5-Man Dungeon</option>
+                                <option value="10">10-Man Raid</option>
+                                <option value="20" selected>20-Man Raid</option>
+                                <option value="25">25-Man Raid</option>
+                                <option value="40">40-Man Raid</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="faction">Faction:</label>
+                            <select id="faction">
+                                <option value="neutral">Neutral (All Classes)</option>
+                                <option value="alliance">Alliance (No Shamans)</option>
+                                <option value="horde">Horde (No Paladins)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Role Thresholds</h3>
+                        <div class="form-group">
+                            <label for="healer-pct">Healer Percentage:</label>
+                            <input type="number" id="healer-pct" min="10" max="50" value="25" step="5">
+                            <span class="help-text">% of raid size</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="tank-count">Minimum Tanks:</label>
+                            <input type="number" id="tank-count" min="1" max="5" value="2">
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Class Priority Weights</h3>
+                        <div class="weight-grid">
+                            <div class="weight-item">
+                                <label>Warrior:</label>
+                                <input type="number" id="weight-warrior" min="0" max="10" value="5" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Rogue:</label>
+                                <input type="number" id="weight-rogue" min="0" max="10" value="4" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Hunter:</label>
+                                <input type="number" id="weight-hunter" min="0" max="10" value="5" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Mage:</label>
+                                <input type="number" id="weight-mage" min="0" max="10" value="5" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Warlock:</label>
+                                <input type="number" id="weight-warlock" min="0" max="10" value="5" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Priest:</label>
+                                <input type="number" id="weight-priest" min="0" max="10" value="6" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Druid:</label>
+                                <input type="number" id="weight-druid" min="0" max="10" value="5" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Shaman:</label>
+                                <input type="number" id="weight-shaman" min="0" max="10" value="7" step="0.5">
+                            </div>
+                            <div class="weight-item">
+                                <label>Paladin:</label>
+                                <input type="number" id="weight-paladin" min="0" max="10" value="6" step="0.5">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" id="save-settings-btn">💾 Save Settings</button>
+                </div>
+            </div>
+
+            <!-- Raid Comp Tool Tab -->
+            <div id="raidcomp-tab" class="tab-content">
+                <div class="raidcomp-section">
+                    <div class="raidcomp-header">
+                        <h2>Raid Group Composition Tool</h2>
+                        <div class="raidcomp-actions">
+                            <button class="btn btn-secondary" id="refresh-members-btn" disabled>🔄 Refresh Data</button>
+                            <button class="btn btn-secondary" id="import-rh-json-btn" disabled>📥 Import Raid Helper
+                                JSON</button>
+                            <button class="btn btn-secondary" id="undo-btn" disabled>↶ Undo</button>
+                            <button class="btn btn-secondary" id="redo-btn" disabled>↷ Redo</button>
+                            <button class="btn btn-primary" id="save-state-btn" disabled>💾 Save State</button>
+                            <button class="btn btn-primary" id="load-state-btn" disabled>📂 Load State</button>
+                        </div>
+                    </div>
+
+                    <div id="raidcomp-status" class="status-message hidden"></div>
+
+                    <!-- Member List -->
+                    <div id="raidcomp-container" class="raidcomp-container hidden">
+                        <div class="members-panel">
+                            <h3>Available Members</h3>
+                            <div class="member-filters">
+                                <label><input type="checkbox" class="status-filter" value="signup" checked> Signed
+                                    Up</label>
+                                <label><input type="checkbox" class="status-filter" value="tentative" checked>
+                                    Tentative</label>
+                                <label><input type="checkbox" class="status-filter" value="bench" checked>
+                                    Benched</label>
+                                <label><input type="checkbox" class="status-filter" value="late" checked> Late</label>
+                                <label><input type="checkbox" class="status-filter" value="absent" checked>
+                                    Absent</label>
+                            </div>
+                            <div id="members-list" class="members-list">
+                                <!-- Members will be populated here -->
+                            </div>
+                        </div>
+
+                        <div class="groups-panel">
+                            <h3>Raid Groups</h3>
+                            <div id="raid-groups" class="raid-groups">
+                                <!-- Groups will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Change Log -->
+                    <div id="change-log" class="change-log hidden">
+                        <h3>Recent Changes</h3>
+                        <div id="change-log-content"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Composition Tab -->
+            <div id="composition-tab" class="tab-content">
+                <div class="composition-section">
+                    <div class="composition-header">
+                        <h2>Raid Composition</h2>
+                        <div class="composition-actions">
+                            <button class="btn btn-primary" id="optimize-btn" disabled>🎯 Optimize Composition</button>
+                            <button class="btn btn-secondary" id="fetch-gs-btn" disabled>📊 Fetch Gear Scores</button>
+                        </div>
+                    </div>
+
+                    <!-- Optimization Mode Selector -->
+                    <div class="optimization-mode-section">
+                        <h3>🎯 Optimization Mode</h3>
+                        <div class="mode-options">
+                            <label class="mode-option">
+                                <input type="radio" name="opt-mode" value="global" checked>
+                                <div class="mode-details">
+                                    <strong>🌍 Global Optimization (Recommended)</strong>
+                                    <p>Build groups from scratch to maximize total raid synergy. Ignores pre-existing
+                                        group assignments.</p>
+                                    <ul>
+                                        <li>✅ Prioritizes Tank + Shaman pairs</li>
+                                        <li>✅ Creates Warlock + Shadow Priest groups</li>
+                                        <li>✅ Optimizes Mage + Balance Druid synergy</li>
+                                        <li>✅ Maximizes overall raid performance</li>
+                                    </ul>
+                                </div>
+                            </label>
+                            <label class="mode-option">
+                                <input type="radio" name="opt-mode" value="keep-groups">
+                                <div class="mode-details">
+                                    <strong>📊 Keep Existing Groups</strong>
+                                    <p>Preserve pre-existing group assignments and only calculate synergy scores.</p>
+                                    <ul>
+                                        <li>📋 Maintains current group structure</li>
+                                        <li>📊 Scores groups based on synergy</li>
+                                        <li>⚠️ May result in suboptimal composition</li>
+                                    </ul>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="optimization-status" class="status-message hidden"></div>
+
+                    <div id="composition-results" class="composition-results hidden">
+                        <div class="results-header">
+                            <h3>Optimized Groups</h3>
+                            <div class="view-toggle">
+                                <button class="view-btn active" data-view="vertical">Vertical</button>
+                                <button class="view-btn" data-view="horizontal">Horizontal</button>
+                            </div>
+                        </div>
+                        <div id="groups-container" class="groups-container"></div>
+
+                        <div class="composition-stats">
+                            <h3>Composition Statistics</h3>
+                            <div id="stats-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Tab -->
+            <div id="export-tab" class="tab-content">
+                <div class="export-section">
+                    <h2>Export Results</h2>
+                    <div class="export-options">
+                        <div class="export-option">
+                            <h3>📄 JSON Export</h3>
+                            <p>Export optimized composition as JSON file</p>
+                            <button class="btn btn-primary" id="export-json-btn" disabled>Export JSON</button>
+                        </div>
+                        <div class="export-option">
+                            <h3>📊 CSV Export</h3>
+                            <p>Export composition as CSV spreadsheet</p>
+                            <button class="btn btn-primary" id="export-csv-btn" disabled>Export CSV</button>
+                        </div>
+                        <div class="export-option">
+                            <h3>📋 Copy to Clipboard</h3>
+                            <p>Copy formatted composition text</p>
+                            <button class="btn btn-secondary" id="copy-clipboard-btn" disabled>Copy Text</button>
+                        </div>
+                    </div>
+
+                    <div class="export-preview">
+                        <h3>Preview</h3>
+                        <pre id="export-preview-text"></pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>WoW Classic Raid Composition Optimizer v1.0.0 | Created by NinjaTech AI</p>
+        </footer>
+    </div>
+
+    <!-- Modals -->
+    <div id="import-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Import Raid Helper JSON</h3>
+                <button class="modal-close" onclick="closeImportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p>Paste the Raid Helper composition JSON data below:</p>
+                <textarea id="import-json-textarea" placeholder='{"groups": [...], "members": [...]}'></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="processImportJSON()">Import</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-member-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Member</h3>
+                <button class="modal-close" onclick="closeEditModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <label>Name:</label>
+                <input type="text" id="edit-member-name" placeholder="Member Name">
+
+                <label>Class:</label>
+                <select id="edit-member-class">
+                    <option value="Warrior">Warrior</option>
+                    <option value="Rogue">Rogue</option>
+                    <option value="Hunter">Hunter</option>
+                    <option value="Mage">Mage</option>
+                    <option value="Warlock">Warlock</option>
+                    <option value="Priest">Priest</option>
+                    <option value="Druid">Druid</option>
+                    <option value="Shaman">Shaman</option>
+                    <option value="Paladin">Paladin</option>
+                </select>
+
+                <label>Spec:</label>
+                <input type="text" id="edit-member-spec" placeholder="Specialization">
+
+                <label>Status:</label>
+                <select id="edit-member-status">
+                    <option value="signup">Signed Up</option>
+                    <option value="tentative">Tentative</option>
+                    <option value="bench">Benched</option>
+                    <option value="late">Late</option>
+                    <option value="absent">Absent</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveEditedMember()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="raidcomp-tool.js"></script>
+</body>
+
+</html>

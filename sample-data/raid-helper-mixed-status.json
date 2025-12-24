@@ -1,0 +1,121 @@
+{
+  "_id": "694712509bc572bcf8e675c5",
+  "hash": "1451984348596142172",
+  "title": "Composition Tool",
+  "partyPerRaid": 3,
+  "slotPerParty": 5,
+  "raidDrop": [
+    {
+      "partyId": 1,
+      "slotId": 1,
+      "class": "Warrior",
+      "spec": "Protection",
+      "spec1": "Protection",
+      "name": "Thunderfury",
+      "signuptime": 1766262735,
+      "userid": "308786972405792768",
+      "isConfirmed": true
+    },
+    {
+      "partyId": 1,
+      "slotId": 2,
+      "class": "Priest",
+      "spec": "Holy",
+      "spec1": "Holy",
+      "name": "Holybolt",
+      "signuptime": 1766254285,
+      "userid": "1143600180596322529",
+      "isConfirmed": true
+    },
+    {
+      "partyId": 1,
+      "slotId": 3,
+      "class": "Mage",
+      "spec": "Fire",
+      "spec1": "Fire",
+      "name": "Frostmage",
+      "signuptime": 1766272470,
+      "userid": "632826771816841227",
+      "isConfirmed": true
+    },
+    {
+      "partyId": 1,
+      "slotId": 4,
+      "class": "Tentative",
+      "spec": "Restoration1",
+      "spec1": "Restoration1",
+      "name": "Khalzkar",
+      "signuptime": 1766271547,
+      "userid": "231654463729827840",
+      "isConfirmed": false
+    },
+    {
+      "partyId": 1,
+      "slotId": 5,
+      "class": "Late",
+      "spec": "Marksmanship",
+      "spec1": "Marksmanship",
+      "name": "Braytt",
+      "signuptime": 1766266431,
+      "userid": "445731631702212610",
+      "isConfirmed": false
+    },
+    {
+      "partyId": 2,
+      "slotId": 1,
+      "class": "Rogue",
+      "spec": "Combat",
+      "spec1": "Combat",
+      "name": "Backstabber",
+      "signuptime": 1766253088,
+      "userid": "223535840305872897",
+      "isConfirmed": true
+    },
+    {
+      "partyId": 2,
+      "slotId": 2,
+      "class": "Bench",
+      "spec": "Combat",
+      "spec1": "Combat",
+      "name": "Strychnin",
+      "signuptime": 1766274836,
+      "userid": "189484888305565697",
+      "isConfirmed": false
+    },
+    {
+      "partyId": 2,
+      "slotId": 3,
+      "class": null,
+      "spec": null,
+      "spec1": null,
+      "name": null,
+      "signuptime": null,
+      "userid": null,
+      "isConfirmed": false
+    },
+    {
+      "partyId": 2,
+      "slotId": 4,
+      "class": "Warlock",
+      "spec": "Destruction",
+      "spec1": "Destruction",
+      "name": "Shadowlock",
+      "signuptime": 1766256564,
+      "userid": "290287833665634306",
+      "isConfirmed": true
+    },
+    {
+      "partyId": 2,
+      "slotId": 5,
+      "class": "Hunter",
+      "spec": "Marksmanship",
+      "spec1": "Marksmanship",
+      "name": "Huntmaster",
+      "signuptime": 1766250632,
+      "userid": "758416718233862185",
+      "isConfirmed": true
+    }
+  ],
+  "raidDropBench": [],
+  "partyNames": ["Group 1", "Group 2", "Group 3"]
+}
