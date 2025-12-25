@@ -1,0 +1,212 @@
+{
+	"id": "test-event-123",
+	"title": "Test Raid Event",
+	"startTime": 1703462400,
+	"endTime": 1703473200,
+	"signUps": [
+		{
+			"userId": "123456789",
+			"name": "TankPlayer1",
+			"className": "Warrior",
+			"specName": "Protection",
+			"status": "primary",
+			"position": 1
+		},
+		{
+			"userId": "234567890",
+			"name": "HealerPlayer1",
+			"className": "Priest",
+			"specName": "Discipline",
+			"status": "primary",
+			"position": 2
+		},
+		{
+			"userId": "345678901",
+			"name": "LatePlayer1",
+			"className": "Mage",
+			"specName": "Frost",
+			"status": "late",
+			"position": 3
+		},
+		{
+			"userId": "456789012",
+			"name": "TentativePlayer1",
+			"className": "Hunter",
+			"specName": "Marksmanship",
+			"status": "tentative",
+			"position": 4
+		},
+		{
+			"userId": "567890123",
+			"name": "BenchedPlayer1",
+			"className": "Rogue",
+			"specName": "Assassination",
+			"status": "backup",
+			"position": 5
+		},
+		{
+			"userId": "678901234",
+			"name": "AbsentPlayer1",
+			"className": "Absence",
+			"specName": "Absence",
+			"status": "absence",
+			"position": 6
+		},
+		{
+			"userId": "789012345",
+			"name": "DPSPlayer1",
+			"className": "Warlock",
+			"specName": "Destruction",
+			"status": "primary",
+			"position": 7
+		},
+		{
+			"userId": "890123456",
+			"name": "DPSPlayer2",
+			"className": "Death Knight",
+			"specName": "Unholy",
+			"status": "primary",
+			"position": 8
+		},
+		{
+			"userId": "901234567",
+			"name": "DPSPlayer3",
+			"className": "Druid",
+			"specName": "Balance",
+			"status": "primary",
+			"position": 9
+		},
+		{
+			"userId": "012345678",
+			"name": "DPSPlayer4",
+			"className": "Shaman",
+			"specName": "Elemental",
+			"status": "primary",
+			"position": 10
+		}
+	],
+	"raidDrop": [
+		{
+			"userid": "123456789",
+			"name": "TankPlayer1",
+			"class": "Warrior",
+			"spec": "Protection",
+			"spec1": "Protection",
+			"signuptime": 1703458800,
+			"isConfirmed": true,
+			"note": "",
+			"partyId": null,
+			"slotId": 1
+		},
+		{
+			"userid": "234567890",
+			"name": "HealerPlayer1",
+			"class": "Priest",
+			"spec": "Discipline",
+			"spec1": "Discipline",
+			"signuptime": 1703458800,
+			"isConfirmed": true,
+			"note": "",
+			"partyId": null,
+			"slotId": 2
+		},
+		{
+			"userid": "345678901",
+			"name": "LatePlayer1",
+			"class": "Mage",
+			"spec": "Frost",
+			"spec1": "Frost",
+			"signuptime": 1703458800,
+			"isConfirmed": true,
+			"note": "",
+			"partyId": null,
+			"slotId": 3
+		},
+		{
+			"userid": "456789012",
+			"name": "TentativePlayer1",
+			"class": "Hunter",
+			"spec": "Marksmanship",
+			"spec1": "Marksmanship",
+			"signuptime": 1703458800,
+			"isConfirmed": false,
+			"note": "",
+			"partyId": null,
+			"slotId": 4
+		},
+		{
+			"userid": "567890123",
+			"name": "BenchedPlayer1",
+			"class": "Rogue",
+			"spec": "Assassination",
+			"spec1": "Assassination",
+			"signuptime": 1703458800,
+			"isConfirmed": false,
+			"note": "",
+			"partyId": null,
+			"slotId": 5
+		},
+		{
+			"userid": "678901234",
+			"name": "AbsentPlayer1",
+			"class": "Absence",
+			"spec": "Absence",
+			"spec1": "Absence",
+			"signuptime": 1703458800,
+			"isConfirmed": false,
+			"note": "",
+			"partyId": null,
+			"slotId": 6
+		},
+		{
+			"userid": "789012345",
+			"name": "DPSPlayer1",
+			"class": "Warlock",
+			"spec": "Destruction",
+			"spec1": "Destruction",
+			"signuptime": 1703458800,
+			"isConfirmed": true,
+			"note": "",
+			"partyId": null,
+			"slotId": 7
+		},
+		{
+			"userid": "890123456",
+			"name": "DPSPlayer2",
+			"class": "Death Knight",
+			"spec": "Unholy",
+			"spec1": "Unholy",
+			"signuptime": 1703458800,
+			"isConfirmed": true,
+			"note": "",
+			"partyId": null,
+			"slotId": 8
+		},
+		{
+			"userid": "901234567",
+			"name": "DPSPlayer3",
+			"class": "Druid",
+			"spec": "Balance",
+			"spec1": "Balance",
+			"signuptime": 1703458800,
+			"isConfirmed": true,
+			"note": "",
+			"partyId": null,
+			"slotId": 9
+		},
+		{
+			"userid": "012345678",
+			"name": "DPSPlayer4",
+			"class": "Shaman",
+			"spec": "Elemental",
+			"spec1": "Elemental",
+			"signuptime": 1703458800,
+			"isConfirmed": true,
+			"note": "",
+			"partyId": null,
+			"slotId": 10
+		}
+	],
+	"partyPerRaid": 8,
+	"slotPerParty": 5
+}

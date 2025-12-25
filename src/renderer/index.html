@@ -212,31 +212,72 @@
 
                     <!-- Member List -->
                     <div id="raidcomp-container" class="raidcomp-container hidden">
-                        <div class="members-panel">
-                            <h3>Available Members</h3>
-                            <div class="member-filters">
-                                <label><input type="checkbox" class="status-filter" value="signup" checked> Signed
-                                    Up</label>
-                                <label><input type="checkbox" class="status-filter" value="tentative" checked>
-                                    Tentative</label>
-                                <label><input type="checkbox" class="status-filter" value="bench" checked>
-                                    Benched</label>
-                                <label><input type="checkbox" class="status-filter" value="late" checked> Late</label>
-                                <label><input type="checkbox" class="status-filter" value="absent" checked>
-                                    Absent</label>
-                            </div>
-                            <div id="members-list" class="members-list">
-                                <!-- Members will be populated here -->
-                            </div>
+                        <!-- Member Statistics -->
+                        <div id="member-stats" class="member-stats">
+                            <!-- Stats will be populated here -->
                         </div>
 
-                        <div class="groups-panel">
-                            <h3>Raid Groups</h3>
-                            <div id="raid-groups" class="raid-groups">
-                                <!-- Groups will be populated here -->
+                        <!-- Main Layout: Sections and Groups -->
+                        <div class="raidcomp-main-layout">
+                            <!-- Left Panel: Member Sections -->
+                            <div class="sections-panel">
+                                <h3>Member Sections</h3>
+
+                                <!-- Unassigned Section -->
+                                <div id="unassigned-section" class="member-section unassigned">
+                                    <div class="section-header">
+                                        <span>Unassigned Members</span>
+                                        <span class="section-count">0</span>
+                                    </div>
+                                    <div class="section-members">
+                                        <!-- Unassigned members will be populated here -->
+                                    </div>
+                                </div>
+
+                                <!-- Tentative Section -->
+                                <div id="tentative-section" class="member-section tentative">
+                                    <div class="section-header">
+                                        <span>Tentative Members</span>
+                                        <span class="section-count">0</span>
+                                    </div>
+                                    <div class="section-members">
+                                        <!-- Tentative members will be populated here -->
+                                    </div>
+                                </div>
+
+                                <!-- Benched Section -->
+                                <div id="benched-section" class="member-section benched">
+                                    <div class="section-header">
+                                        <span>Benched Members</span>
+                                        <span class="section-count">0</span>
+                                    </div>
+                                    <div class="section-members">
+                                        <!-- Benched members will be populated here -->
+                                    </div>
+                                </div>
+
+                                <!-- Absent Section -->
+                                <div id="absent-section" class="member-section absent">
+                                    <div class="section-header">
+                                        <span>Absent Members</span>
+                                        <span class="section-count">0</span>
+                                    </div>
+                                    <div class="section-members">
+                                        <!-- Absent members will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Panel: Raid Groups -->
+                            <div class="groups-panel">
+                                <h3>Raid Groups (8 Groups)</h3>
+                                <div id="raid-groups" class="raid-groups">
+                                    <!-- Groups will be populated here -->
+                                </div>
                             </div>
                         </div>
                     </div>
+                    <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 
                     <!-- Change Log -->
                     <div id="change-log" class="change-log hidden">
@@ -395,7 +436,7 @@
                     <option value="tentative">Tentative</option>
                     <option value="bench">Benched</option>
                     <option value="late">Late</option>
-                    <option value="absent">Absent</option>
+                    <option value="absence">Absent</option>
                 </select>
             </div>
             <div class="modal-footer">

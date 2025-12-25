@@ -1,257 +1,300 @@
 // WoW Classic Synergy and Buff System
 class SynergyCalculator {
-    constructor() {
-        // Define class synergies and optimal group compositions
-        this.synergyGroups = {
-            melee: {
-                classes: ['Warrior', 'Rogue'],
-                specs: ['Fury', 'Arms', 'Combat', 'Assassination', 'Subtlety', 'Feral', 'Enhancement'],
-                buffs: ['Windfury Totem', 'Strength of Earth', 'Grace of Air'],
-                providers: ['Shaman'],
-                ideal: { warriors: 3, rogues: 1, shamans: 1 }
-            },
-            caster: {
-                classes: ['Mage', 'Warlock'],
-                specs: ['Fire', 'Frost', 'Arcane', 'Affliction', 'Destruction', 'Demonology', 'Shadow', 'Balance'],
-                buffs: ['Arcane Intellect', 'Moonkin Aura'],
-                providers: ['Druid'],
-                ideal: { mages: 4, boomkin: 1 }
-            },
-            warlock: {
-                classes: ['Warlock'],
-                specs: ['Affliction', 'Destruction', 'Demonology'],
-                buffs: ['Shadow Weaving', 'Curse of Elements'],
-                providers: ['Priest'],
-                ideal: { warlocks: 4, shadowPriest: 1 }
-            },
-            hunter: {
-                classes: ['Hunter'],
-                specs: ['Marksmanship', 'Beast Mastery', 'Survival'],
-                buffs: ['Trueshot Aura'],
-                providers: [],
-                ideal: { hunters: 3, melee: 2 }
-            }
-        };
-    }
+	constructor() {
+		// Define class synergies and optimal group compositions
+		this.synergyGroups = {
+			melee: {
+				classes: ["Warrior", "Rogue"],
+				specs: [
+					"Fury",
+					"Arms",
+					"Combat",
+					"Assassination",
+					"Subtlety",
+					"Feral",
+					"Enhancement",
+				],
+				buffs: ["Windfury Totem", "Strength of Earth", "Grace of Air"],
+				providers: ["Shaman"],
+				ideal: { warriors: 3, rogues: 1, shamans: 1 },
+			},
+			caster: {
+				classes: ["Mage", "Warlock"],
+				specs: [
+					"Fire",
+					"Frost",
+					"Arcane",
+					"Affliction",
+					"Destruction",
+					"Demonology",
+					"Shadow",
+					"Balance",
+				],
+				buffs: ["Arcane Intellect", "Moonkin Aura"],
+				providers: ["Druid"],
+				ideal: { mages: 4, boomkin: 1 },
+			},
+			warlock: {
+				classes: ["Warlock"],
+				specs: ["Affliction", "Destruction", "Demonology"],
+				buffs: ["Shadow Weaving", "Curse of Elements"],
+				providers: ["Priest"],
+				ideal: { warlocks: 4, shadowPriest: 1 },
+			},
+			hunter: {
+				classes: ["Hunter"],
+				specs: ["Marksmanship", "Beast Mastery", "Survival"],
+				buffs: ["Trueshot Aura"],
+				providers: [],
+				ideal: { hunters: 3, melee: 2 },
+			},
+		};
+	}
 
-    // Calculate synergy score between two players
-    calculatePlayerSynergy(player1, player2) {
-        // Tank + Shaman = absolute priority
-        if (
-            (this.isTank(player1) && this.isShaman(player2)) ||
-            (this.isTank(player2) && this.isShaman(player1))
-        ) {
-            console.log("TANK + SHAMAN!!");
-            return 1000;
-        }
+	// Calculate synergy score between two players
+	calculatePlayerSynergy(player1, player2) {
+		// Tank + Shaman = absolute priority
+		if (
+			(this.isTank(player1) && this.isShaman(player2)) ||
+			(this.isTank(player2) && this.isShaman(player1))
+		) {
+			console.log("TANK + SHAMAN!!");
+			return 1000;
+		}
 
-        let score = 0;
+		let score = 0;
 
-        const p1 = {
-            isTank: this.isTank(player1),
-            isMelee: this.isMelee(player1) && !this.isTank(player1),
-            isCaster: this.isCaster(player1),
-            isShaman: this.isShaman(player1),
-        };
+		const p1 = {
+			isTank: this.isTank(player1),
+			isMelee: this.isMelee(player1) && !this.isTank(player1),
+			isCaster: this.isCaster(player1),
+			isShaman: this.isShaman(player1),
+		};
 
-        const p2 = {
-            isTank: this.isTank(player2),
-            isMelee: this.isMelee(player2) && !this.isTank(player2),
-            isCaster: this.isCaster(player2),
-            isShaman: this.isShaman(player2),
-        };
+		const p2 = {
+			isTank: this.isTank(player2),
+			isMelee: this.isMelee(player2) && !this.isTank(player2),
+			isCaster: this.isCaster(player2),
+			isShaman: this.isShaman(player2),
+		};
 
-        // Melee synergy (non-tank only)
-        if (p1.isMelee && p2.isMelee) {
-            score += 10;
-        }
+		// Melee synergy (non-tank only)
+		if (p1.isMelee && p2.isMelee) {
+			score += 10;
+		}
 
-        // Windfury synergy
-        if (p1.isShaman && (p2.isMelee || p2.isTank)) {
-            score += 30;
-        }
-        if (p2.isShaman && (p1.isMelee || p1.isTank)) {
-            score += 30;
-        }
+		// Windfury synergy
+		if (p1.isShaman && (p2.isMelee || p2.isTank)) {
+			score += 30;
+		}
+		if (p2.isShaman && (p1.isMelee || p1.isTank)) {
+			score += 30;
+		}
 
-        // Caster synergy
-        if (this.isCaster(player1) && this.isCaster(player2)) {
-            score += 10;
-        }
+		// Caster synergy
+		if (this.isCaster(player1) && this.isCaster(player2)) {
+			score += 10;
+		}
 
-        // Mage + Balance Druid (spell crit aura)
-        if (this.isMage(player1) && this.isBalanceDruid(player2)) {
-            score += 25;
-        }
-        if (this.isBalanceDruid(player1) && this.isMage(player2)) {
-            score += 25;
-        }
+		// Mage + Balance Druid (spell crit aura)
+		if (this.isMage(player1) && this.isBalanceDruid(player2)) {
+			score += 25;
+		}
+		if (this.isBalanceDruid(player1) && this.isMage(player2)) {
+			score += 25;
+		}
 
-        // Warlock + Shadow Priest
-        if (this.isWarlock(player1) && this.isShadowPriest(player2)) {
-            score += 25;
-        }
-        if (this.isShadowPriest(player1) && this.isWarlock(player2)) {
-            score += 25;
-        }
+		// Warlock + Shadow Priest
+		if (this.isWarlock(player1) && this.isShadowPriest(player2)) {
+			score += 25;
+		}
+		if (this.isShadowPriest(player1) && this.isWarlock(player2)) {
+			score += 25;
+		}
 
-        // Hunter + Melee (Trueshot Aura benefits physical DPS)
-        if (this.isHunter(player1) && this.isMelee(player2)) {
-            score += 10;
-        }
-        if (this.isMelee(player1) && this.isHunter(player2)) {
-            score += 10;
-        }
+		// Hunter + Melee (Trueshot Aura benefits physical DPS)
+		if (this.isHunter(player1) && this.isMelee(player2)) {
+			score += 10;
+		}
+		if (this.isMelee(player1) && this.isHunter(player2)) {
+			score += 10;
+		}
 
-        // Feral Druid + Melee (Leader of the Pack)
-        if (this.isFeralDruid(player1) && this.isMelee(player2)) {
-            score += 15;
-        }
-        if (this.isMelee(player1) && this.isFeralDruid(player2)) {
-            score += 15;
-        }
+		// Feral Druid + Melee (Leader of the Pack)
+		if (this.isFeralDruid(player1) && this.isMelee(player2)) {
+			score += 15;
+		}
+		if (this.isMelee(player1) && this.isFeralDruid(player2)) {
+			score += 15;
+		}
 
-        return score;
-    }
+		return score;
+	}
 
-    // Calculate total synergy for a group
-    calculateGroupSynergy(players) {
-        let totalScore = 0;
-        
-        // Calculate pairwise synergies
-        for (let i = 0; i < players.length; i++) {
-            for (let j = i + 1; j < players.length; j++) {
-                totalScore += this.calculatePlayerSynergy(players[i], players[j]);
-            }
-        }
+	// Calculate total synergy for a group
+	calculateGroupSynergy(players) {
+		let totalScore = 0;
 
-        // Bonus for optimal group compositions
-        totalScore += this.getCompositionBonus(players);
+		// Calculate pairwise synergies
+		for (let i = 0; i < players.length; i++) {
+			for (let j = i + 1; j < players.length; j++) {
+				totalScore += this.calculatePlayerSynergy(
+					players[i],
+					players[j]
+				);
+			}
+		}
 
-        return totalScore;
-    }
+		// Bonus for optimal group compositions
+		totalScore += this.getCompositionBonus(players);
 
-    getCompositionBonus(players) {
-        let bonus = 0;
-        const counts = this.countPlayerTypes(players);
+		return totalScore;
+	}
 
-        // Melee group bonus (3-4 melee + 1 shaman)
-        if (counts.melee >= 3 && counts.shamans >= 1) {
-            bonus += 50;
-        }
+	getCompositionBonus(players) {
+		let bonus = 0;
+		const counts = this.countPlayerTypes(players);
 
-        // Caster group bonus (4+ casters + balance druid)
-        if (counts.mages >= 3 && counts.balanceDruids >= 1) {
-            bonus += 40;
-        }
+		// Melee group bonus (3-4 melee + 1 shaman)
+		if (counts.melee >= 3 && counts.shamans >= 1) {
+			bonus += 50;
+		}
 
-        // Warlock group bonus (3+ warlocks + shadow priest)
-        if (counts.warlocks >= 3 && counts.shadowPriests >= 1) {
-            bonus += 40;
-        }
+		// Caster group bonus (4+ casters + balance druid)
+		if (counts.mages >= 3 && counts.balanceDruids >= 1) {
+			bonus += 40;
+		}
 
-        // Hunter group bonus (2+ hunters)
-        if (counts.hunters >= 2) {
-            bonus += 20;
-        }
+		// Warlock group bonus (3+ warlocks + shadow priest)
+		if (counts.warlocks >= 3 && counts.shadowPriests >= 1) {
+			bonus += 40;
+		}
 
-        // Healer presence bonus
-        if (counts.healers >= 1) {
-            bonus += 15;
-        }
+		// Hunter group bonus (2+ hunters)
+		if (counts.hunters >= 2) {
+			bonus += 20;
+		}
 
-        // Tank presence bonus
-        if (counts.tanks >= 1) {
-            bonus += 10;
-        }
+		// Healer presence bonus
+		if (counts.healers >= 1) {
+			bonus += 15;
+		}
 
-        return bonus;
-    }
+		// Tank presence bonus
+		if (counts.tanks >= 1) {
+			bonus += 10;
+		}
 
-    countPlayerTypes(players) {
-        return {
-            melee: players.filter(p => this.isMelee(p)).length,
-            casters: players.filter(p => this.isCaster(p)).length,
-            mages: players.filter(p => this.isMage(p)).length,
-            warlocks: players.filter(p => this.isWarlock(p)).length,
-            hunters: players.filter(p => this.isHunter(p)).length,
-            shamans: players.filter(p => this.isShaman(p)).length,
-            balanceDruids: players.filter(p => this.isBalanceDruid(p)).length,
-            shadowPriests: players.filter(p => this.isShadowPriest(p)).length,
-            feralDruids: players.filter(p => this.isFeralDruid(p)).length,
-            healers: players.filter(p => p.roles.primary === 'healer').length,
-            tanks: players.filter(p => p.roles.primary === 'tank').length
-        };
-    }
+		return bonus;
+	}
 
-    // Helper methods to identify player types
-    isMelee(player) {
-        const meleeClasses = ['Warrior', 'Rogue'];
-        const meleeSpecs = ['Fury', 'Arms', 'Combat', 'Assassination', 'Subtlety', 'Feral', 'Enhancement'];
-        return meleeClasses.includes(player.class) || 
-               meleeSpecs.some(spec => player.spec.includes(spec));
-    }
+	countPlayerTypes(players) {
+		return {
+			melee: players.filter((p) => this.isMelee(p)).length,
+			casters: players.filter((p) => this.isCaster(p)).length,
+			mages: players.filter((p) => this.isMage(p)).length,
+			warlocks: players.filter((p) => this.isWarlock(p)).length,
+			hunters: players.filter((p) => this.isHunter(p)).length,
+			shamans: players.filter((p) => this.isShaman(p)).length,
+			balanceDruids: players.filter((p) => this.isBalanceDruid(p)).length,
+			shadowPriests: players.filter((p) => this.isShadowPriest(p)).length,
+			feralDruids: players.filter((p) => this.isFeralDruid(p)).length,
+			healers: players.filter((p) => p.roles.primary === "healer").length,
+			tanks: players.filter((p) => p.roles.primary === "tank").length,
+		};
+	}
 
-    isCaster(player) {
-        const casterClasses = ['Mage', 'Warlock'];
-        const casterSpecs = ['Fire', 'Frost', 'Arcane', 'Affliction', 'Destruction', 'Demonology', 'Shadow', 'Balance'];
-        return casterClasses.includes(player.class) || 
-               casterSpecs.some(spec => player.spec.includes(spec));
-    }
+	// Helper methods to identify player types
+	isMelee(player) {
+		const meleeClasses = ["Warrior", "Rogue"];
+		const meleeSpecs = [
+			"Fury",
+			"Arms",
+			"Combat",
+			"Assassination",
+			"Subtlety",
+			"Feral",
+			"Enhancement",
+		];
+		return (
+			meleeClasses.includes(player.class) ||
+			meleeSpecs.some((spec) => player.spec.includes(spec))
+		);
+	}
 
-    isMage(player) {
-        return player.class === 'Mage';
-    }
+	isCaster(player) {
+		const casterClasses = ["Mage", "Warlock"];
+		const casterSpecs = [
+			"Fire",
+			"Frost",
+			"Arcane",
+			"Affliction",
+			"Destruction",
+			"Demonology",
+			"Shadow",
+			"Balance",
+		];
+		return (
+			casterClasses.includes(player.class) ||
+			casterSpecs.some((spec) => player.spec.includes(spec))
+		);
+	}
 
-    isWarlock(player) {
-        return player.class === 'Warlock';
-    }
+	isMage(player) {
+		return player.class === "Mage";
+	}
 
-    isHunter(player) {
-        return player.class === 'Hunter';
-    }
+	isWarlock(player) {
+		return player.class === "Warlock";
+	}
 
-    isShaman(player) {
-        return player.class === 'Shaman';
-    }
+	isHunter(player) {
+		return player.class === "Hunter";
+	}
 
-    isBalanceDruid(player) {
-        return player.class === 'Druid' && player.spec.includes('Balance');
-    }
+	isShaman(player) {
+		return player.class === "Shaman";
+	}
 
-    isShadowPriest(player) {
-        return player.class === 'Priest' && player.spec.includes('Shadow');
-    }
+	isBalanceDruid(player) {
+		return player.class === "Druid" && player.spec.includes("Balance");
+	}
 
-    isFeralDruid(player) {
-        return player.class === 'Druid' && player.spec.includes('Feral');
-    }
+	isShadowPriest(player) {
+		return player.class === "Priest" && player.spec.includes("Shadow");
+	}
 
-    isTank(player) {
-        // Check if player has tank role
-        if (player.roles && player.roles.primary === 'tank') {
-            return true;
-        }
-        // Fallback: check for tank specs
-        const tankSpecs = ['Protection'];
-        return tankSpecs.some(spec => 
-            player.spec && player.spec.toLowerCase().includes(spec.toLowerCase())
-        );
-    }
+	isFeralDruid(player) {
+		return player.class === "Druid" && player.spec.includes("Feral");
+	}
 
-    // Get ideal group type for a player
-    getIdealGroupType(player) {
-        if (this.isMelee(player)) return 'melee';
-        if (this.isMage(player)) return 'caster';
-        if (this.isWarlock(player)) return 'warlock';
-        if (this.isHunter(player)) return 'hunter';
-        if (this.isShaman(player)) return 'melee'; // Shamans go with melee for Windfury
-        if (this.isBalanceDruid(player)) return 'caster'; // Boomkin with mages
-        if (this.isShadowPriest(player)) return 'warlock'; // Shadow priest with warlocks
-        if (player.roles.primary === 'healer') return 'healer';
-        if (player.roles.primary === 'tank') return 'tank';
-        return 'flex';
-    }
+	isTank(player) {
+		// Check if player has tank role
+		if (player.roles && player.roles.primary === "tank") {
+			return true;
+		}
+		// Fallback: check for tank specs
+		const tankSpecs = ["Protection"];
+		return tankSpecs.some(
+			(spec) =>
+				player.spec &&
+				player.spec.toLowerCase().includes(spec.toLowerCase())
+		);
+	}
+
+	// Get ideal group type for a player
+	getIdealGroupType(player) {
+		if (this.isMelee(player)) return "melee";
+		if (this.isMage(player)) return "caster";
+		if (this.isWarlock(player)) return "warlock";
+		if (this.isHunter(player)) return "hunter";
+		if (this.isShaman(player)) return "melee"; // Shamans go with melee for Windfury
+		if (this.isBalanceDruid(player)) return "caster"; // Boomkin with mages
+		if (this.isShadowPriest(player)) return "warlock"; // Shadow priest with warlocks
+		if (player.roles.primary === "healer") return "healer";
+		if (player.roles.primary === "tank") return "tank";
+		return "flex";
+	}
 }
 
 module.exports = SynergyCalculator;

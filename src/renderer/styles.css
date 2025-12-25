@@ -1340,3 +1340,205 @@ footer {
 		min-width: 120px;
 	}
 }
+/* Enhanced Raid Comp Tool Styles */
+
+/* Member Statistics */
+.member-stats {
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 8px;
+	padding: 1rem 1.5rem;
+	margin-bottom: 1.5rem;
+	display: flex;
+	gap: 2rem;
+	flex-wrap: wrap;
+}
+
+.stat-item {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.stat-label {
+	color: #aaa;
+	font-size: 0.9rem;
+}
+
+.stat-value {
+	font-weight: bold;
+	font-size: 1.1rem;
+	color: #667eea;
+}
+
+/* Main Layout */
+.raidcomp-main-layout {
+	display: grid;
+	grid-template-columns: 350px 1fr;
+	gap: 2rem;
+}
+
+/* Sections Panel */
+.sections-panel {
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 8px;
+	padding: 1.5rem;
+	max-height: 900px;
+	overflow-y: auto;
+}
+
+.sections-panel h3 {
+	margin-bottom: 1rem;
+	padding-bottom: 0.5rem;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Member Sections */
+.member-section {
+	background: rgba(255, 255, 255, 0.03);
+	border: 2px solid rgba(255, 255, 255, 0.1);
+	border-radius: 8px;
+	padding: 1rem;
+	margin-bottom: 1rem;
+	min-height: 100px;
+}
+
+.member-section.drag-over {
+	border-color: rgba(102, 126, 234, 0.8);
+	background: rgba(102, 126, 234, 0.1);
+}
+
+.member-section.unassigned {
+	border-color: rgba(102, 126, 234, 0.3);
+}
+
+.member-section.tentative {
+	border-color: rgba(255, 193, 7, 0.3);
+}
+
+.member-section.benched {
+	border-color: rgba(156, 39, 176, 0.3);
+}
+
+.member-section.absent {
+	border-color: rgba(244, 67, 54, 0.3);
+}
+
+.section-header {
+	font-weight: bold;
+	margin-bottom: 0.75rem;
+	padding-bottom: 0.5rem;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.section-count {
+	font-size: 0.85rem;
+	color: #aaa;
+	background: rgba(255, 255, 255, 0.1);
+	padding: 0.25rem 0.5rem;
+	border-radius: 4px;
+}
+
+.section-members {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+/* Section Member Items */
+.section-member {
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	padding: 0.75rem;
+	cursor: move;
+	transition: all 0.2s;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.section-member:hover {
+	background: rgba(255, 255, 255, 0.1);
+	border-color: rgba(102, 126, 234, 0.5);
+	transform: translateX(5px);
+}
+
+.section-member.dragging {
+	opacity: 0.5;
+	transform: rotate(2deg);
+}
+
+/* Late Member Highlighting */
+.late-member {
+	border-color: rgba(255, 152, 0, 0.6) !important;
+	background: rgba(255, 152, 0, 0.1) !important;
+}
+
+.late-badge {
+	display: inline-block;
+	background: rgba(255, 152, 0, 0.3);
+	color: #ff9800;
+	padding: 0.15rem 0.4rem;
+	border-radius: 3px;
+	font-size: 0.7rem;
+	font-weight: bold;
+	margin-left: 0.5rem;
+}
+
+/* Member Actions */
+.member-actions {
+	display: flex;
+	gap: 0.25rem;
+}
+
+.member-action-btn {
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	color: #fff;
+	padding: 0.25rem 0.4rem;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 0.9rem;
+	transition: all 0.2s;
+}
+
+.member-action-btn:hover {
+	background: rgba(255, 255, 255, 0.2);
+	transform: scale(1.1);
+}
+
+/* Update raidcomp-container layout */
+.raidcomp-container {
+	display: block !important;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+	.raidcomp-main-layout {
+		grid-template-columns: 300px 1fr;
+	}
+}
+
+@media (max-width: 992px) {
+	.raidcomp-main-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.sections-panel {
+		max-height: 500px;
+	}
+}
+
+@media (max-width: 768px) {
+	.member-stats {
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.raid-groups {
+		grid-template-columns: 1fr;
+	}
+}

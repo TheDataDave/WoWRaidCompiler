@@ -200,6 +200,8 @@ class Player {
 			case "Hunter":
 				buffs.push("Trueshot Aura", "Aspect of the Hawk");
 				break;
+			default:
+				break;
 		}
 
 		return buffs;

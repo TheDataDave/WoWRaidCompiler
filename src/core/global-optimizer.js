@@ -14,7 +14,7 @@ const SynergyCalculator = require("./synergy");
  */
 class GlobalOptimizer {
 	constructor(players, settings) {
-		this.players = players;
+		this.players = players.filter((p) => p.isConfirmed);
 		this.settings = {
 			raidSize: settings.raidSize || 40,
 			faction: settings.faction || "neutral",
@@ -68,6 +68,18 @@ class GlobalOptimizer {
 		// Phase 2: Create Melee Groups (remaining melee + remaining shamans)
 		console.log("\n⚔️ Phase 2: Creating Melee Groups");
 		this.createMeleeGroups(cat);
+
+		// Phase 2.5: Add Feral Druids to Melee Groups
+		console.log("\n🐱 Phase 2.5: Adding Feral Druids to Melee Groups");
+		this.addFeralsToMeleeGroups(cat);
+
+		// Phase 2.75: Add Hunters to Melee Groups
+		console.log("\n🏹 Phase 2.75: Adding Hunters to Melee Groups");
+		this.addHuntersToMeleeGroups(cat);
+
+		// Phase 3: Create Mage Groups (existing)
+		console.log("\n❄️ Phase 3: Creating Mage Groups");
+		this.createMageGroups(cat);
 
 		// Phase 3: Create Mage Groups
 		console.log("\n❄️ Phase 3: Creating Mage Groups");
@@ -241,12 +253,14 @@ class GlobalOptimizer {
 		return groupIndex;
 	}
 
+	// NEW VERSION - Replace the existing createMeleeGroups method with this
+
 	createMeleeGroups(cat) {
-		// Get all unassigned melee (including feral druids and enhancement shamans)
-		const allMelee = [
+		// Get ONLY pure melee (Warriors, Rogues, Enhancement Shamans)
+		// EXCLUDE Feral Druids and Hunters for now
+		const pureMelee = [
 			...cat.warriors,
 			...cat.rogues,
-			...cat.feralDruids,
 			...cat.enhancementShamans,
 		].filter((p) => !this.assignedIds.has(p.id));
 
@@ -258,13 +272,13 @@ class GlobalOptimizer {
 		].filter((s) => !this.assignedIds.has(s.id));
 
 		console.log(
-			`  📊 Available: ${allMelee.length} melee, ${availableShamans.length} shamans`
+			`  📊 Available: ${pureMelee.length} pure melee, ${availableShamans.length} shamans`
 		);
 
-		// Create melee groups: 1 shaman + 3-4 melee
+		// Create melee groups: 1 shaman + 3-4 PURE melee (no ferals/hunters yet)
 		let groupsCreated = 0;
 		while (
-			allMelee.filter((m) => !this.assignedIds.has(m.id)).length >= 3 &&
+			pureMelee.filter((m) => !this.assignedIds.has(m.id)).length >= 3 &&
 			availableShamans.filter((s) => !this.assignedIds.has(s.id)).length >
 				0 &&
 			groupsCreated < 3
@@ -272,7 +286,7 @@ class GlobalOptimizer {
 			const group = this.findNextAvailableGroup();
 			if (!group) break;
 
-			const currentMelee = allMelee.filter(
+			const currentMelee = pureMelee.filter(
 				(m) => !this.assignedIds.has(m.id)
 			);
 			const currentShamans = availableShamans.filter(
@@ -283,11 +297,10 @@ class GlobalOptimizer {
 			const shaman = currentShamans[0];
 			this.addPlayerToGroup(group, shaman, `Shaman (${shaman.spec})`);
 
-			// Add 3-4 melee (prioritize Warriors and Rogues)
+			// Add 3-4 PURE melee (Warriors and Rogues only, prioritize Warriors)
 			const meleeByPriority = [
 				...currentMelee.filter((m) => m.class === "Warrior"),
 				...currentMelee.filter((m) => m.class === "Rogue"),
-				...currentMelee.filter((m) => this.synergyCalc.isFeralDruid(m)),
 				...currentMelee.filter((m) => m.class === "Shaman"),
 			];
 
@@ -529,71 +542,20 @@ class GlobalOptimizer {
 		}
 	}
 
+	// SIMPLIFIED VERSION - Replace the existing optimizeMeleeGroups method with this
+	// Since we're now handling Ferals and Hunters proactively, this phase is mainly for healers
+
 	optimizeMeleeGroups(cat) {
-		// Find melee/tank groups
+		// This phase is now mainly for ensuring healers in melee groups
 		const meleeGroups = this.groups.filter(
 			(g) => g.groupType === "melee" || g.groupType === "tank-melee"
 		);
 
-		console.log(`  📊 Optimizing ${meleeGroups.length} melee groups`);
+		console.log(
+			`  📊 Checking ${meleeGroups.length} melee groups for healers`
+		);
 
 		for (const group of meleeGroups) {
-			// Check if group needs a hunter or feral druid
-			const hasHunter = group.players.some((p) =>
-				this.synergyCalc.isHunter(p)
-			);
-			const hasFeral = group.players.some((p) =>
-				this.synergyCalc.isFeralDruid(p)
-			);
-			const meleeCount = group.players.filter(
-				(p) =>
-					this.synergyCalc.isMelee(p) && !this.synergyCalc.isTank(p)
-			).length;
-
-			// If group is full of melee (4+) but missing hunter/feral buffs
-			if (
-				group.players.length >= 4 &&
-				meleeCount >= 3 &&
-				!hasHunter &&
-				!hasFeral
-			) {
-				console.log(
-					`  🔧 Group ${group.id} needs optimization (${meleeCount} melee, no hunter/feral)`
-				);
-
-				// Find a hunter or feral not in a melee group
-				const hunterToMove = this.findPlayerToSwap(
-					cat.hunters,
-					"hunter"
-				);
-				const feralToMove = this.findPlayerToSwap(
-					cat.feralDruids,
-					"feral"
-				);
-
-				const playerToSwapIn = hunterToMove || feralToMove;
-
-				if (playerToSwapIn && playerToSwapIn.currentGroup) {
-					// Find a melee DPS to swap out (prefer warrior/rogue that's NOT with a shaman)
-					const meleeToSwapOut = this.findMeleeToSwapOut(group);
-
-					if (meleeToSwapOut) {
-						console.log(
-							`  🔄 Swapping ${meleeToSwapOut.name} (${meleeToSwapOut.class}) with ${playerToSwapIn.name} (${playerToSwapIn.class})`
-						);
-
-						// Perform swap
-						const sourceGroup = playerToSwapIn.currentGroup;
-
-						group.removePlayer(meleeToSwapOut.id);
-						sourceGroup.removePlayer(playerToSwapIn.id);
-
-						group.addPlayer(playerToSwapIn);
-						sourceGroup.addPlayer(meleeToSwapOut);
-					}
-				}
-			}
-
 			// Ensure every melee group has a healer if possible
 			const hasHealer = group.players.some(
 				(p) => p.roles.primary === "healer"
@@ -746,6 +708,120 @@ class GlobalOptimizer {
 				player.spec || "N/A"
 			}) [${role}]`
 		);
+	}
+
+	// NEW METHOD - Add this method to the GlobalOptimizer class
+
+	addFeralsToMeleeGroups(cat) {
+		const availableFeralDruids = cat.feralDruids.filter(
+			(f) => !this.assignedIds.has(f.id)
+		);
+
+		console.log(
+			`  📊 Available: ${availableFeralDruids.length} feral druids`
+		);
+
+		// Find melee groups that have space (less than 5 players)
+		const meleeGroups = this.groups.filter(
+			(g) =>
+				(g.groupType === "melee" || g.groupType === "tank-melee") &&
+				g.players.length < 5
+		);
+
+		// Sort melee groups by number of melee DPS (prioritize groups with most melee)
+		meleeGroups.sort((a, b) => {
+			const aMeleeCount = a.players.filter(
+				(p) =>
+					this.synergyCalc.isMelee(p) && !this.synergyCalc.isTank(p)
+			).length;
+			const bMeleeCount = b.players.filter(
+				(p) =>
+					this.synergyCalc.isMelee(p) && !this.synergyCalc.isTank(p)
+			).length;
+			return bMeleeCount - aMeleeCount;
+		});
+
+		let feralsAdded = 0;
+		for (const feral of availableFeralDruids) {
+			if (this.assignedIds.has(feral.id)) continue;
+
+			// Find a melee group without a feral
+			const targetGroup = meleeGroups.find(
+				(g) =>
+					g.players.length < 5 &&
+					!g.players.some((p) => this.synergyCalc.isFeralDruid(p))
+			);
+
+			if (targetGroup) {
+				this.addPlayerToGroup(
+					targetGroup,
+					feral,
+					"Feral Druid (Leader of the Pack)"
+				);
+				feralsAdded++;
+				console.log(
+					`  ✅ Added ${feral.name} to Group ${targetGroup.id}`
+				);
+			}
+		}
+
+		console.log(`  📊 Added ${feralsAdded} feral druids to melee groups`);
+	}
+
+	// NEW METHOD - Add this method to the GlobalOptimizer class
+
+	addHuntersToMeleeGroups(cat) {
+		const availableHunters = cat.hunters.filter(
+			(h) => !this.assignedIds.has(h.id)
+		);
+
+		console.log(`  📊 Available: ${availableHunters.length} hunters`);
+
+		// Find melee groups that have space and would benefit from Trueshot Aura
+		const meleeGroups = this.groups.filter(
+			(g) =>
+				(g.groupType === "melee" || g.groupType === "tank-melee") &&
+				g.players.length < 5
+		);
+
+		// Sort melee groups by number of melee DPS (prioritize groups with most melee)
+		meleeGroups.sort((a, b) => {
+			const aMeleeCount = a.players.filter(
+				(p) =>
+					this.synergyCalc.isMelee(p) && !this.synergyCalc.isTank(p)
+			).length;
+			const bMeleeCount = b.players.filter(
+				(p) =>
+					this.synergyCalc.isMelee(p) && !this.synergyCalc.isTank(p)
+			).length;
+			return bMeleeCount - aMeleeCount;
+		});
+
+		let huntersAdded = 0;
+		for (const hunter of availableHunters) {
+			if (this.assignedIds.has(hunter.id)) continue;
+
+			// Find a melee group without a hunter
+			const targetGroup = meleeGroups.find(
+				(g) =>
+					g.players.length < 5 &&
+					!g.players.some((p) => this.synergyCalc.isHunter(p))
+			);
+
+			if (targetGroup) {
+				this.addPlayerToGroup(
+					targetGroup,
+					hunter,
+					"Hunter (Trueshot Aura)"
+				);
+				huntersAdded++;
+				console.log(
+					`  ✅ Added ${hunter.name} to Group ${targetGroup.id}`
+				);
+			}
+		}
+
+		console.log(`  📊 Added ${huntersAdded} hunters to melee groups`);
 	}
 
 	finalizeRaid() {

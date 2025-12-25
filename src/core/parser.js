@@ -1,5 +1,8 @@
 const { Player } = require("./models");
-const { normalizeStatus: normalizeStatusEnum, isValidStatus, shouldExclude } = require('./status-enums');
+const {
+	normalizeStatus: normalizeStatusEnum,
+	PlayerStatus,
+} = require("./status-enums");
 
 class RaidHelperParser {
 	constructor() {
@@ -13,10 +16,11 @@ class RaidHelperParser {
 			"Mage",
 			"Warlock",
 			"Druid",
+			"Tank", // Special Raid Helper class
 		]);
 
 		// Raid-Helper encodes attendance as fake "classes"
-		this.ATTENDANCE_CLASSES = new Set([
+		this.STATUS_CLASSES = new Set([
 			"Absence",
 			"Bench",
 			"Late",
@@ -51,36 +55,72 @@ class RaidHelperParser {
 	}
 
 	/* ────────────────────────────────────────────── */
-	/* STATUS NORMALIZATION                           */
+	/* STATUS DETERMINATION                           */
 	/* ────────────────────────────────────────────── */
 
-	normalizeStatus(entry) {
-		// Determine raw status from entry
-		let rawStatus = null;
-		
-		// API payload - className field
-		if (entry.className) {
-			rawStatus = entry.className;
+	/**
+	 * Determine the player's status based on className field
+	 * LOGIC:
+	 * - If className is a WoW class → status is "confirmed" (they're signed up)
+	 * - If className is a status indicator → that's their status
+	 */
+	determineStatus(entry) {
+		const className = entry.className || entry.class;
+
+		if (!className) {
+			return PlayerStatus.CONFIRMED; // Default to confirmed if no className
 		}
-		// JSON import payload - boolean flags
-		else if (entry.isAbsence || entry.class === "Absence") {
-			rawStatus = "absence";
+
+		// Check if className is actually a status indicator
+		if (this.STATUS_CLASSES.has(className)) {
+			// Map the status class to our normalized status
+			const statusMap = {
+				Absence: "absence",
+				Bench: "benched",
+				Late: "late",
+				Tentative: "tentative",
+			};
+
+			return normalizeStatusEnum(
+				statusMap[className],
+				PlayerStatus.CONFIRMED
+			);
 		}
-		else if (entry.isBenched || entry.class === "Bench") {
-			rawStatus = "bench";
+
+		// Check if className is a valid WoW class
+		if (this.WOW_CLASSES.has(className)) {
+			// It's a real class, so player is confirmed/signed up
+			return PlayerStatus.CONFIRMED;
 		}
-		else if (entry.isLate || entry.class === "Late") {
-			rawStatus = "late";
+
+		// Unknown className - default to confirmed
+		return PlayerStatus.CONFIRMED;
+	}
+
+	/**
+	 * Determine the player's actual WoW class
+	 * LOGIC:
+	 * - If className is a WoW class → use it
+	 * - If className is a status → infer from spec
+	 */
+	determineClass(entry) {
+		const className = entry.className || entry.class;
+
+		// First check if className is actually a WoW class
+		if (this.WOW_CLASSES.has(className)) {
+			return className;
 		}
-		else if (entry.isTentative || entry.class === "Tentative") {
-			rawStatus = "tentative";
+
+		// If className is a status, try to infer from spec
+		const spec = entry.specName || entry.spec || entry.spec1;
+		if (spec) {
+			const inferredClass = this.inferClassFromSpec(spec);
+			if (inferredClass) {
+				return inferredClass;
+			}
 		}
-		else {
-			rawStatus = "confirmed";
-		}
-		
-		// Use the centralized status normalization
-		return normalizeStatusEnum(rawStatus, "confirmed");
+
+		return null; // Could not determine class
 	}
 
 	/* ────────────────────────────────────────────── */
@@ -107,50 +147,32 @@ class RaidHelperParser {
 				return;
 			}
 
-			const status = this.normalizeStatus(entry);
-
-			/* ─────────── ABSENCE ─────────── */
-
-			if (status === "absent") {
-				players.push(
-					new Player({
-						userid: entry.userid || entry.userId,
-						name: entry.name,
-						status,
-						isAbsence: true,
-						note: entry.note,
-					})
-				);
-				return;
-			}
+			// Determine status based on className
+			const status = this.determineStatus(entry);
 
 			/* ─────────── CLASS RESOLUTION ─────────── */
+			let wowClass = this.determineClass(entry);
 
-			let wowClass =
-				entry.className || entry.class || entry.class1 || null;
-
-			// Attendance classes are NOT real WoW classes
-			if (this.ATTENDANCE_CLASSES.has(wowClass)) {
-				wowClass = null;
-			}
-
-			if (!this.WOW_CLASSES.has(wowClass)) {
-				wowClass = this.inferClassFromSpec(
-					entry.specName || entry.spec || entry.spec1
-				);
-			}
-
-			if (!this.WOW_CLASSES.has(wowClass)) {
-				warnings.push(
-					`Slot ${index + 1} (${
-						entry.name
-					}): Unable to determine WoW class`
-				);
-				return;
+			// Handle players without a determinable class
+			if (!wowClass) {
+				// For Absence/Benched players, this is expected - no warning needed
+				if (status === "absence") {
+					wowClass = status; // Set className to status
+				} else {
+					// For active players (confirmed, tentative, late), warn if no class
+					warnings.push(
+						`Slot ${index + 1} (${
+							entry.name
+						}): Unable to determine WoW class (className: ${
+							entry.className
+						}, spec: ${
+							entry.specName || "none"
+						}) - Status: ${status}`
+					);
+				}
 			}
 
 			/* ─────────── PLAYER CREATION ─────────── */
-
 			players.push(
 				new Player({
 					userid: entry.userid || entry.userId,
@@ -163,14 +185,9 @@ class RaidHelperParser {
 						"Unknown",
 					signuptime: entry.signuptime || entry.entryTime,
 					status,
-
-					isConfirmed: status === "confirmed",
-					isTentative: status === "tentative",
-					isLate: status === "late",
-					isBenched: status === "benched",
-					isAbsence: false,
-
 					note: entry.note,
+					partyId: entry.partyId,
+					slotId: entry.slotId || entry.position,
 				})
 			);
 		});
@@ -201,10 +218,13 @@ class RaidHelperParser {
 
 			// Paladin
 			Holy: "Paladin",
+			Holy1: "Paladin",
 			Retribution: "Paladin",
+			Protection1: "Paladin",
 
 			// Hunter
 			"Beast Mastery": "Hunter",
+			Beastmastery: "Hunter",
 			Marksmanship: "Hunter",
 			Survival: "Hunter",
 
@@ -221,6 +241,7 @@ class RaidHelperParser {
 			Elemental: "Shaman",
 			Enhancement: "Shaman",
 			Restoration: "Shaman",
+			Restoration1: "Shaman",
 
 			// Mage
 			Arcane: "Mage",
@@ -234,10 +255,166 @@ class RaidHelperParser {
 
 			// Druid
 			Balance: "Druid",
+			Dreamstate: "Druid",
 			Feral: "Druid",
+			Guardian: "Druid",
 		};
 
 		return specMap[spec] || null;
+	}
+
+	/* ────────────────────────────────────────────── */
+	/* SUMMARY GENERATION                            */
+	/* ────────────────────────────────────────────── */
+
+	getSummary(players) {
+		const summary = {
+			total: players.length,
+			confirmed: 0,
+			tentative: 0,
+			late: 0,
+			benched: 0,
+			absence: 0,
+			byClass: {},
+			byRole: {
+				tank: 0,
+				healer: 0,
+				dps: 0,
+			},
+		};
+
+		players.forEach((player) => {
+			// Count by status
+			switch (player.status) {
+				case "confirmed":
+					summary.confirmed++;
+					break;
+				case "tentative":
+					summary.tentative++;
+					break;
+				case "late":
+					summary.late++;
+					break;
+				case "benched":
+					summary.benched++;
+					break;
+				case "absence":
+					summary.absence++;
+					break;
+			}
+
+			// Count by class (skip if Unknown/Absence)
+			if (player.class && player.class !== "Unknown") {
+				summary.byClass[player.class] =
+					(summary.byClass[player.class] || 0) + 1;
+			}
+
+			// Count by role (skip if absence)
+			if (
+				player.status !== "absence" &&
+				player.roles &&
+				player.roles.primary
+			) {
+				summary.byRole[player.roles.primary]++;
+			}
+		});
+
+		return summary;
+	}
+
+	/* ────────────────────────────────────────────── */
+	/* EXPORT METHODS                                 */
+	/* ────────────────────────────────────────────── */
+
+	exportToJSON(raid, groups) {
+		return {
+			metadata: {
+				exportDate: new Date().toISOString(),
+				raidSize: raid.size,
+				faction: raid.faction,
+				totalPlayers: raid.players.length,
+			},
+			composition: raid.composition,
+			groups: groups.map((group) => group.toJSON()),
+			players: raid.players.map((player) => player.toJSON()),
+		};
+	}
+
+	exportToCSV(raid, groups) {
+		const headers = [
+			"Group",
+			"Player Name",
+			"Class",
+			"Spec",
+			"Role",
+			"Gear Score",
+			"Score",
+			"Status",
+		];
+
+		const rows = [headers.join(",")];
+
+		groups.forEach((group) => {
+			group.players.forEach((player) => {
+				const status = player.status || "confirmed";
+
+				const row = [
+					group.id,
+					`"${player.name}"`,
+					player.class,
+					`"${player.spec}"`,
+					player.roles.primary,
+					player.gearScore,
+					player.score,
+					status,
+				];
+				rows.push(row.join(","));
+			});
+		});
+
+		return rows.join("\n");
+	}
+
+	exportToText(raid, groups) {
+		let text = "═══════════════════════════════════════════════════════\n";
+		text += "       WOW CLASSIC RAID COMPOSITION\n";
+		text += "═══════════════════════════════════════════════════════\n\n";
+
+		text += `Raid Size: ${raid.size}\n`;
+		text += `Faction: ${raid.faction}\n`;
+		text += `Total Players: ${raid.players.length}\n\n`;
+
+		text += "COMPOSITION:\n";
+		text += `  Tanks: ${raid.composition.tanks}\n`;
+		text += `  Healers: ${raid.composition.healers}\n`;
+		text += `  DPS: ${raid.composition.dps}\n`;
+		text += `  Utility: ${raid.composition.utility}\n\n`;
+
+		text += "───────────────────────────────────────────────────────\n\n";
+
+		groups.forEach((group) => {
+			text += `GROUP ${group.id} (Score: ${group.score})\n`;
+			text += "───────────────────────────────────────────────────────\n";
+
+			group.players.forEach((player) => {
+				const roleIcon =
+					player.roles.primary === "tank"
+						? "🛡️"
+						: player.roles.primary === "healer"
+						? "💚"
+						: "⚔️";
+				text += `${roleIcon} ${player.name.padEnd(
+					20
+				)} | ${player.class.padEnd(10)} | `;
+				text += `${player.spec.padEnd(15)} | GS: ${player.gearScore}\n`;
+			});
+
+			text += "\n";
+		});
+
+		text += "═══════════════════════════════════════════════════════\n";
+
+		return text;
 	}
 }
 

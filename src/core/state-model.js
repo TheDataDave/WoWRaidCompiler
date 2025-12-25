@@ -266,7 +266,7 @@ class RaidState {
 			tentative: 0,
 			late: 0,
 			benched: this.bench.length,
-			absent: 0
+			absence: 0
 		};
 		
 		this.getAllPlayers().forEach(player => {

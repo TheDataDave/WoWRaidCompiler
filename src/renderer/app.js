@@ -385,7 +385,7 @@ function displayPlayerSummary(players) {
 	container.innerHTML += `
         <div class="summary-card">
             <h4>Valid Players</h4>
-            <p style="font-size: 2em; color: #ffd700;">${players.total}</p>
+            <p style="font-size: 2em; color: #ffd700;">${players.confirmed}(+${players.tentative})</p>
         </div>
     `;
 
